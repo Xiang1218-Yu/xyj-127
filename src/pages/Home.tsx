@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Gamepad2, Brain } from 'lucide-react';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette } from 'lucide-react';
 import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
 import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
 import { LocationInfoCard } from '@/components/LocationInfoCard';
 import { LocationListSidebar } from '@/components/LocationListSidebar';
 import { TravelMap } from '@/components/TravelMap';
+import { EditorSidebar } from '@/components/EditorSidebar';
+import { OverlayLayer } from '@/components/OverlayLayer';
 import { streetViewLocations, getRandomLocation, type StreetViewLocation } from '@/data/locations';
 import { useTravelStore } from '@/store/useTravelStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -23,7 +26,14 @@ export default function Home() {
   const [isCapturing, setIsCapturing] = useState(false);
   
   const streetViewerRef = useRef<StreetViewerRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { addVisitedLocation, uniqueLocations } = useTravelStore();
+  const { getFilterCss, isEditorOpen, setEditorOpen } = useEditorStore();
+
+  const getCanvas = useCallback(() => {
+    const canvas = document.querySelector('canvas');
+    return canvas;
+  }, []);
 
   useEffect(() => {
     addVisitedLocation(currentLocation.id);
@@ -98,46 +108,63 @@ export default function Home() {
     setInfoExpanded(prev => !prev);
   }, []);
 
+  const handleToggleEditor = useCallback(() => {
+    if (!isEditorOpen) {
+      setShowInfo(false);
+    }
+    setEditorOpen(!isEditorOpen);
+  }, [isEditorOpen, setEditorOpen, setShowInfo]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.repeat) {
+      if (e.code === 'Space' && !e.repeat && !isEditorOpen) {
         e.preventDefault();
         handleRandom();
       }
-      if (e.code === 'KeyL' && !e.repeat) {
+      if (e.code === 'KeyL' && !e.repeat && !isEditorOpen) {
         setShowLocationList(prev => !prev);
       }
-      if (e.code === 'KeyI' && !e.repeat) {
+      if (e.code === 'KeyI' && !e.repeat && !isEditorOpen) {
         toggleInfo();
       }
-      if (e.code === 'KeyM' && !e.repeat) {
+      if (e.code === 'KeyM' && !e.repeat && !isEditorOpen) {
         setShowTravelMap(prev => !prev);
       }
-      if (e.code === 'KeyP' && !e.repeat && !showPuzzleGame) {
+      if (e.code === 'KeyP' && !e.repeat && !showPuzzleGame && !isEditorOpen) {
         handleStartPuzzleGame();
+      }
+      if (e.code === 'KeyE' && !e.repeat) {
+        handleToggleEditor();
+      }
+      if (e.code === 'Escape' && !e.repeat && isEditorOpen) {
+        setEditorOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame]);
+  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, isEditorOpen, setEditorOpen, handleToggleEditor]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
       {/* 3D Street Viewer */}
       <motion.div
+        ref={containerRef}
         className={cn('absolute inset-0', isTransitioning && 'opacity-0 scale-105')}
         animate={{
           opacity: isTransitioning ? 0 : 1,
           scale: isTransitioning ? 1.05 : 1
         }}
         transition={{ duration: 0.6, ease: 'easeInOut' }}
+        style={{ filter: getFilterCss() }}
       >
         <StreetViewer
           ref={streetViewerRef}
           location={currentLocation}
-          interactive={!isLoading && !showPuzzleGame}
+          interactive={!isLoading && !showPuzzleGame && !isEditorOpen}
           onSceneReady={handleSceneReady}
         />
+        
+        <OverlayLayer containerRef={containerRef} />
       </motion.div>
 
       {/* Loading Overlay */}
@@ -154,7 +181,15 @@ export default function Home() {
         onOpenList={() => setShowLocationList(true)}
         onOpenMap={() => setShowTravelMap(true)}
         onStartGame={handleStartPuzzleGame}
+        onOpenEditor={handleToggleEditor}
         isCapturing={isCapturing}
+        isEditorOpen={isEditorOpen}
+      />
+
+      {/* Editor Sidebar */}
+      <EditorSidebar
+        getCanvas={getCanvas}
+        location={currentLocation}
       />
 
       {/* Location Info Card */}
@@ -248,10 +283,12 @@ interface HeaderProps {
   onOpenList: () => void;
   onOpenMap: () => void;
   onStartGame: () => void;
+  onOpenEditor: () => void;
   isCapturing: boolean;
+  isEditorOpen: boolean;
 }
 
-function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, isCapturing }: HeaderProps) {
+function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, onOpenEditor, isCapturing, isEditorOpen }: HeaderProps) {
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
@@ -328,6 +365,20 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
           >
             <Info className="w-4 h-4" />
             <span className="text-sm font-medium hidden sm:inline">信息</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenEditor}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-xl backdrop-blur-md border transition-all',
+              isEditorOpen
+                ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border-purple-400/40 text-purple-200'
+                : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-200 hover:from-purple-500/30 hover:to-pink-500/30'
+            )}
+          >
+            <Palette className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">编辑</span>
           </motion.button>
         </div>
       </div>
@@ -411,6 +462,11 @@ function ControlHint() {
         <span className="flex items-center gap-1.5">
           <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500/30 to-pink-500/30 font-mono text-[10px] text-purple-200 border border-purple-400/30">P</kbd>
           空间训练
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500/30 to-pink-500/30 font-mono text-[10px] text-purple-200 border border-purple-400/30">E</kbd>
+          图片编辑
         </span>
       </div>
     </motion.div>
