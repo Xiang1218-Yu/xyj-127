@@ -1,30 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight } from 'lucide-react';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map } from 'lucide-react';
 import StreetViewer from '@/components/StreetViewer';
 import { LocationInfoCard } from '@/components/LocationInfoCard';
 import { LocationListSidebar } from '@/components/LocationListSidebar';
+import { TravelMap } from '@/components/TravelMap';
 import { streetViewLocations, getRandomLocation, type StreetViewLocation } from '@/data/locations';
+import { useTravelStore } from '@/store/useTravelStore';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
   const [currentLocation, setCurrentLocation] = useState<StreetViewLocation>(() => getRandomLocation());
   const [isLoading, setIsLoading] = useState(true);
   const [showLocationList, setShowLocationList] = useState(false);
+  const [showTravelMap, setShowTravelMap] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [visitedCount, setVisitedCount] = useState(1);
+  
+  const { addVisitedLocation, uniqueLocations } = useTravelStore();
+
+  useEffect(() => {
+    addVisitedLocation(currentLocation.id);
+  }, []);
 
   const handleRandom = useCallback(() => {
     setIsTransitioning(true);
     setIsLoading(true);
     setTimeout(() => {
-      setCurrentLocation(prev => getRandomLocation(prev.id));
+      const newLocation = getRandomLocation(currentLocation.id);
+      setCurrentLocation(newLocation);
+      addVisitedLocation(newLocation.id);
       setIsTransitioning(false);
-      setVisitedCount(c => c + 1);
     }, 600);
-  }, []);
+  }, [currentLocation.id, addVisitedLocation]);
 
   const handleSelectLocation = useCallback((location: StreetViewLocation) => {
     setIsTransitioning(true);
@@ -32,10 +41,20 @@ export default function Home() {
     setShowLocationList(false);
     setTimeout(() => {
       setCurrentLocation(location);
+      addVisitedLocation(location.id);
       setIsTransitioning(false);
-      setVisitedCount(c => c + 1);
     }, 600);
-  }, []);
+  }, [addVisitedLocation]);
+
+  const handleMapLocationSelect = useCallback((location: StreetViewLocation) => {
+    setIsTransitioning(true);
+    setIsLoading(true);
+    setTimeout(() => {
+      setCurrentLocation(location);
+      addVisitedLocation(location.id);
+      setIsTransitioning(false);
+    }, 600);
+  }, [addVisitedLocation]);
 
   const handleSceneReady = useCallback(() => {
     setIsLoading(false);
@@ -60,6 +79,9 @@ export default function Home() {
       }
       if (e.code === 'KeyI' && !e.repeat) {
         toggleInfo();
+      }
+      if (e.code === 'KeyM' && !e.repeat) {
+        setShowTravelMap(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -92,10 +114,11 @@ export default function Home() {
 
       {/* Header */}
       <Header
-        visitedCount={visitedCount}
+        visitedCount={uniqueLocations}
         showInfo={showInfo}
         onToggleInfo={toggleInfo}
         onOpenList={() => setShowLocationList(true)}
+        onOpenMap={() => setShowTravelMap(true)}
       />
 
       {/* Location Info Card */}
@@ -124,6 +147,13 @@ export default function Home() {
 
       {/* Compass Indicator */}
       <CompassIndicator />
+
+      {/* Travel Map Modal */}
+      <TravelMap
+        open={showTravelMap}
+        onClose={() => setShowTravelMap(false)}
+        onSelectLocation={handleMapLocationSelect}
+      />
     </div>
   );
 }
@@ -169,9 +199,10 @@ interface HeaderProps {
   showInfo: boolean;
   onToggleInfo: () => void;
   onOpenList: () => void;
+  onOpenMap: () => void;
 }
 
-function Header({ visitedCount, showInfo, onToggleInfo, onOpenList }: HeaderProps) {
+function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap }: HeaderProps) {
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
@@ -203,6 +234,15 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList }: HeaderProp
         </div>
 
         <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenMap}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white/90 hover:bg-white/20 transition-all"
+          >
+            <Map className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">足迹地图</span>
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -288,6 +328,11 @@ function ControlHint() {
             <path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
           </svg>
           拖动鼠标旋转视角
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">M</kbd>
+          足迹地图
         </span>
         <span className="w-px h-4 bg-white/20" />
         <span className="flex items-center gap-1.5">
