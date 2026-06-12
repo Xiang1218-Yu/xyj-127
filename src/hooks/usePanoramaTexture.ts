@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
 export interface UsePanoramaTextureOptions {
   url: string;
@@ -11,47 +10,6 @@ export interface UsePanoramaTextureOptions {
 export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureOptions) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const loadHDRTexture = useCallback(async (textureUrl: string) => {
-    return new Promise<THREE.Texture>((resolve, reject) => {
-      const rgbeLoader = new RGBELoader();
-      rgbeLoader.setDataType(THREE.UnsignedByteType);
-      rgbeLoader.load(
-        textureUrl,
-        (loadedTexture) => {
-          loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
-          loadedTexture.colorSpace = THREE.SRGBColorSpace;
-          resolve(loadedTexture);
-        },
-        undefined,
-        (err: unknown) => {
-          const message = err instanceof Error ? err.message : 'Unknown error';
-          reject(new Error(`HDR load failed: ${message}`));
-        }
-      );
-    });
-  }, []);
-
-  const loadImageTexture = useCallback(async (textureUrl: string) => {
-    return new Promise<THREE.Texture>((resolve, reject) => {
-      const loader = new THREE.TextureLoader();
-      loader.setCrossOrigin('anonymous');
-      loader.load(
-        textureUrl,
-        (loadedTexture) => {
-          loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
-          loadedTexture.colorSpace = THREE.SRGBColorSpace;
-          resolve(loadedTexture);
-        },
-        undefined,
-        (err: unknown) => {
-          const message = err instanceof Error ? err.message : 'Unknown error';
-          reject(new Error(`Image load failed: ${message}`));
-        }
-      );
-    });
-  }, []);
 
   const createFallbackTexture = useCallback((): THREE.Texture => {
     const canvas = document.createElement('canvas');
@@ -125,48 +83,47 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
     if (!url) return;
 
     setIsLoading(true);
-    setError(null);
-
     let cancelled = false;
-
-    const loadTexture = async () => {
-      try {
-        let loadedTexture: THREE.Texture;
-
-        if (url.endsWith('.hdr') || url.includes('hdr')) {
-          try {
-            loadedTexture = await loadHDRTexture(url);
-          } catch (hdrError) {
-            console.warn('HDR failed, trying image fallback:', hdrError);
-            loadedTexture = await loadImageTexture(url.replace('.hdr', '.jpg'));
-          }
-        } else {
-          loadedTexture = await loadImageTexture(url);
-        }
-
-        if (!cancelled) {
-          setTexture(loadedTexture);
-          setIsLoading(false);
-          onLoad?.();
-        }
-      } catch (err) {
-        console.warn('Panorama load failed, using fallback:', err);
-        if (!cancelled) {
-          const fallback = createFallbackTexture();
-          setTexture(fallback);
-          setIsLoading(false);
-          setError(err instanceof Error ? err : new Error('Unknown load error'));
-          onError?.(err instanceof Error ? err : new Error('Unknown load error'));
-        }
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('Panorama load timed out, using fallback');
+        const fallback = createFallbackTexture();
+        setTexture(fallback);
+        setIsLoading(false);
       }
-    };
+    }, 5000);
 
-    loadTexture();
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+
+    loader.load(
+      url,
+      (loadedTexture) => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
+        loadedTexture.colorSpace = THREE.SRGBColorSpace;
+        setTexture(loadedTexture);
+        setIsLoading(false);
+        onLoad?.();
+      },
+      undefined,
+      (err) => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        console.warn('Panorama load failed, using fallback:', err);
+        const fallback = createFallbackTexture();
+        setTexture(fallback);
+        setIsLoading(false);
+        onError?.(err instanceof Error ? err : new Error('Load failed'));
+      }
+    );
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [url, loadHDRTexture, loadImageTexture, createFallbackTexture, onLoad, onError]);
+  }, [url, createFallbackTexture, onLoad, onError]);
 
-  return { texture, isLoading, error };
+  return { texture, isLoading };
 }
