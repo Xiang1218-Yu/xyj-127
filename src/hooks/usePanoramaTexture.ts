@@ -72,36 +72,25 @@ export function usePanoramaTexture({ url, locationKey, onLoad, onError }: UsePan
     setIsLoading(true);
     let cancelled = false;
 
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        console.warn('Panorama load timed out, using fallback');
-        const fallback = createFallbackTexture();
-        setTexture(fallback);
-        setIsLoading(false);
-        onLoadRef.current?.();
-      }
-    }, 8000);
-
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
 
+    const onLoaded = (loadedTexture: THREE.Texture) => {
+      if (cancelled) return;
+      loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
+      loadedTexture.colorSpace = THREE.SRGBColorSpace;
+      loadedTexture.needsUpdate = true;
+      setTexture(loadedTexture);
+      setIsLoading(false);
+      onLoadRef.current?.();
+    };
+
     loader.load(
       url,
-      (loadedTexture) => {
-        if (cancelled) return;
-        clearTimeout(timeoutId);
-        loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
-        loadedTexture.colorSpace = THREE.SRGBColorSpace;
-        loadedTexture.needsUpdate = true;
-        console.log('Panorama loaded successfully:', url);
-        setTexture(loadedTexture);
-        setIsLoading(false);
-        onLoadRef.current?.();
-      },
+      onLoaded,
       undefined,
       (err) => {
         if (cancelled) return;
-        clearTimeout(timeoutId);
         console.warn('Panorama load failed, using fallback:', err);
         const fallback = createFallbackTexture();
         setTexture(fallback);
@@ -113,7 +102,6 @@ export function usePanoramaTexture({ url, locationKey, onLoad, onError }: UsePan
 
     return () => {
       cancelled = true;
-      clearTimeout(timeoutId);
     };
   }, [url, locationKey, createFallbackTexture]);
 

@@ -60,6 +60,14 @@ export default function Home() {
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [currentLocation.id, isLoading]);
+
   const toggleInfo = useCallback(() => {
     setShowInfo(prev => !prev);
   }, []);
