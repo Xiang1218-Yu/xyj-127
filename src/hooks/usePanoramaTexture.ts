@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as THREE from 'three';
 
 export interface UsePanoramaTextureOptions {
@@ -11,10 +11,15 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const onLoadRef = useRef(onLoad);
+  const onErrorRef = useRef(onError);
+  onLoadRef.current = onLoad;
+  onErrorRef.current = onError;
+
   const createFallbackTexture = useCallback((): THREE.Texture => {
     const canvas = document.createElement('canvas');
-    canvas.width = 4096;
-    canvas.height = 2048;
+    canvas.width = 2048;
+    canvas.height = 1024;
     const ctx = canvas.getContext('2d')!;
 
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -25,7 +30,7 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 300; i++) {
       ctx.beginPath();
       ctx.arc(
         Math.random() * canvas.width,
@@ -44,25 +49,6 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
     groundGradient.addColorStop(1, '#1a1a2e');
     ctx.fillStyle = groundGradient;
     ctx.fillRect(0, horizonY, canvas.width, canvas.height - horizonY);
-
-    for (let i = 0; i < 40; i++) {
-      const bx = Math.random() * canvas.width;
-      const bw = 30 + Math.random() * 80;
-      const bh = 60 + Math.random() * 200;
-      const by = horizonY - bh;
-      ctx.fillStyle = `rgba(30, 30, 50, ${0.5 + Math.random() * 0.3})`;
-      ctx.fillRect(bx, by, bw, bh);
-      for (let wr = 0; wr < Math.floor(bh / 25); wr++) {
-        for (let wc = 0; wc < Math.floor(bw / 20); wc++) {
-          if (Math.random() > 0.4) {
-            ctx.fillStyle = Math.random() > 0.5
-              ? 'rgba(255, 220, 150, 0.8)'
-              : 'rgba(150, 200, 255, 0.6)';
-            ctx.fillRect(bx + 5 + wc * 20, by + 10 + wr * 25, 8, 12);
-          }
-        }
-      }
-    }
 
     const vignette = ctx.createRadialGradient(
       canvas.width / 2, canvas.height / 2, canvas.width * 0.25,
@@ -84,17 +70,18 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
 
     setIsLoading(true);
     let cancelled = false;
+
     const timeoutId = setTimeout(() => {
       if (!cancelled) {
         console.warn('Panorama load timed out, using fallback');
         const fallback = createFallbackTexture();
         setTexture(fallback);
         setIsLoading(false);
+        onLoadRef.current?.();
       }
-    }, 5000);
+    }, 8000);
 
     const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
 
     loader.load(
       url,
@@ -105,7 +92,7 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
         loadedTexture.colorSpace = THREE.SRGBColorSpace;
         setTexture(loadedTexture);
         setIsLoading(false);
-        onLoad?.();
+        onLoadRef.current?.();
       },
       undefined,
       (err) => {
@@ -115,7 +102,8 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
         const fallback = createFallbackTexture();
         setTexture(fallback);
         setIsLoading(false);
-        onError?.(err instanceof Error ? err : new Error('Load failed'));
+        onErrorRef.current?.(err instanceof Error ? err : new Error('Load failed'));
+        onLoadRef.current?.();
       }
     );
 
@@ -123,7 +111,7 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [url, createFallbackTexture, onLoad, onError]);
+  }, [url, createFallbackTexture]);
 
   return { texture, isLoading };
 }
