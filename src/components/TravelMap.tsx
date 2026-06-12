@@ -99,7 +99,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
           />
           
           <motion.div
-            className="relative w-full max-w-5xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl border border-white/10 overflow-hidden"
+            className="relative w-full max-w-5xl max-h-[90vh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl border border-white/10 overflow-y-auto"
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
@@ -250,7 +250,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
 
                     if (!isVisited) {
                       return (
-                        <g key={loc.id}>
+                        <g key={loc.id} opacity={isFiltered ? 0.08 : 1}>
                           <circle
                             cx={x}
                             cy={y}
@@ -403,9 +403,19 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
             </div>
 
             <div className="px-6 pb-6">
-              <h3 className="text-white/80 text-sm font-medium mb-3">最近探索</h3>
+              <h3 className="text-white/80 text-sm font-medium mb-3">
+                {selectedContinent ? `${selectedContinent} - 探索记录` : '最近探索'}
+              </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-40 overflow-y-auto">
-                {visitedLocationsWithData
+                {filteredLocations.length === 0 && (
+                  <div className="col-span-full py-6 text-center">
+                    <p className="text-white/30 text-sm">
+                      {selectedContinent ? `${selectedContinent} 暂无探索记录` : '暂无探索记录'}
+                    </p>
+                    <p className="text-white/20 text-xs mt-1">开始探索世界吧！</p>
+                  </div>
+                )}
+                {filteredLocations
                   .sort((a, b) => b.visitedAt - a.visitedAt)
                   .slice(0, 8)
                   .map((item) => (
