@@ -3,11 +3,12 @@ import * as THREE from 'three';
 
 export interface UsePanoramaTextureOptions {
   url: string;
+  locationKey?: string;
   onLoad?: () => void;
   onError?: (error: Error) => void;
 }
 
-export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureOptions) {
+export function usePanoramaTexture({ url, locationKey, onLoad, onError }: UsePanoramaTextureOptions) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -114,7 +115,7 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [url, createFallbackTexture]);
+  }, [url, locationKey, createFallbackTexture]);
 
   return { texture, isLoading };
 }

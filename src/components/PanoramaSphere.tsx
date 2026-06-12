@@ -6,14 +6,16 @@ import type { StreetViewLocation } from '@/data/locations';
 
 interface PanoramaSphereProps {
   location: StreetViewLocation;
+  locationKey?: string;
   onLoad?: () => void;
 }
 
-export function PanoramaSphere({ location, onLoad }: PanoramaSphereProps) {
+export function PanoramaSphere({ location, locationKey, onLoad }: PanoramaSphereProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const { texture, isLoading } = usePanoramaTexture({
     url: location.panoramaUrl,
+    locationKey: locationKey ?? location.id,
     onLoad
   });
 

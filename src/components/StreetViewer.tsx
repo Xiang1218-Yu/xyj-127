@@ -23,7 +23,7 @@ export default function StreetViewer({
       camera={{ fov: 75, near: 0.1, far: 2000 }}
       style={{ background: '#000', width: '100%', height: '100%' }}
     >
-      <PanoramaSphere location={location} onLoad={onSceneReady} />
+      <PanoramaSphere location={location} locationKey={location.id} onLoad={onSceneReady} />
       <CameraController
         initialHeading={location.initialHeading}
         initialPitch={location.initialPitch}

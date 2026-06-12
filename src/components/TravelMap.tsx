@@ -72,6 +72,16 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
     return stats;
   }, [visitedLocations]);
 
+  const handleSelectContinent = (continent: string | null) => {
+    setSelectedContinent(continent);
+    if (continent && hoveredLocation) {
+      const loc = streetViewLocations.find((l) => l.id === hoveredLocation);
+      if (loc && loc.continent !== continent) {
+        setHoveredLocation(null);
+      }
+    }
+  };
+
   const filteredLocations = useMemo(() => {
     if (!selectedContinent) return visitedLocationsWithData;
     return visitedLocationsWithData.filter((v) => v.location.continent === selectedContinent);
@@ -148,7 +158,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
             <div className="px-6 py-3 flex items-center gap-2 border-b border-white/5">
               <span className="text-white/50 text-xs">大洲筛选:</span>
               <button
-                onClick={() => setSelectedContinent(null)}
+                onClick={() => handleSelectContinent(null)}
                 className={cn(
                   'px-3 py-1 rounded-full text-xs font-medium transition-all',
                   selectedContinent === null
@@ -161,7 +171,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
               {continents.map((continent) => (
                 <button
                   key={continent}
-                  onClick={() => setSelectedContinent(continent)}
+                  onClick={() => handleSelectContinent(continent)}
                   className={cn(
                     'px-3 py-1 rounded-full text-xs font-medium transition-all',
                     selectedContinent === continent
