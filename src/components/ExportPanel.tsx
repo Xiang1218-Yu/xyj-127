@@ -7,6 +7,7 @@ import type { StreetViewLocation } from '@/data/locations';
 import { cn } from '@/lib/utils';
 
 interface ExportPanelProps {
+  getContainer: () => HTMLElement | null;
   getCanvas: () => HTMLCanvasElement | null;
   location: StreetViewLocation;
 }
@@ -19,8 +20,8 @@ const CARD_STYLES: { id: CardStyle; name: string; preview: string }[] = [
   { id: 'vibrant', name: '活力', preview: 'from-cyan-400 via-purple-500 to-pink-500' },
 ];
 
-export function ExportPanel({ getCanvas, location }: ExportPanelProps) {
-  const { watermarks, stickers, getFilterCss } = useEditorStore();
+export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelProps) {
+  const { getFilterCss } = useEditorStore();
   const [isExporting, setIsExporting] = useState(false);
   const [includeInfo, setIncludeInfo] = useState(true);
   const [cardStyle, setCardStyle] = useState<CardStyle>('elegant');
@@ -29,17 +30,14 @@ export function ExportPanel({ getCanvas, location }: ExportPanelProps) {
   const [exportSuccess, setExportSuccess] = useState(false);
 
   const handleCaptureScreenshot = async () => {
+    const container = getContainer();
     const canvas = getCanvas();
-    if (!canvas) return;
+    if (!container || !canvas) return;
 
     setIsExporting(true);
     try {
-      const dataUrl = await captureScene(canvas, {
-        width: 1920,
-        height: 1080,
+      const dataUrl = await captureScene(container, canvas, {
         filterCss: getFilterCss(),
-        watermarks,
-        stickers,
         location,
         includeInfo,
       });
@@ -53,15 +51,14 @@ export function ExportPanel({ getCanvas, location }: ExportPanelProps) {
   };
 
   const handleCreateShareCard = async () => {
+    const container = getContainer();
     const canvas = getCanvas();
-    if (!canvas) return;
+    if (!container || !canvas) return;
 
     setIsExporting(true);
     try {
-      const dataUrl = await createShareCard(canvas, {
+      const dataUrl = await createShareCard(container, canvas, {
         filterCss: getFilterCss(),
-        watermarks,
-        stickers,
         location,
         cardStyle,
       });

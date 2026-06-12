@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import type { StreetViewLocation } from '@/data/locations';
 
 interface EditorSidebarProps {
+  getContainer: () => HTMLElement | null;
   getCanvas: () => HTMLCanvasElement | null;
   location: StreetViewLocation;
 }
@@ -20,7 +21,7 @@ const TABS = [
   { id: 'export' as const, name: '导出', icon: Download },
 ] as const;
 
-export function EditorSidebar({ getCanvas, location }: EditorSidebarProps) {
+export function EditorSidebar({ getContainer, getCanvas, location }: EditorSidebarProps) {
   const { isEditorOpen, setEditorOpen, activeTab, setActiveTab, clearAll } = useEditorStore();
 
   const renderPanel = () => {
@@ -32,7 +33,7 @@ export function EditorSidebar({ getCanvas, location }: EditorSidebarProps) {
       case 'sticker':
         return <StickerPanel />;
       case 'export':
-        return <ExportPanel getCanvas={getCanvas} location={location} />;
+        return <ExportPanel getContainer={getContainer} getCanvas={getCanvas} location={location} />;
       default:
         return null;
     }

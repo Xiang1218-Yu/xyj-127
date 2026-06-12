@@ -35,6 +35,10 @@ export default function Home() {
     return canvas;
   }, []);
 
+  const getContainer = useCallback(() => {
+    return containerRef.current;
+  }, []);
+
   useEffect(() => {
     addVisitedLocation(currentLocation.id);
   }, []);
@@ -155,14 +159,15 @@ export default function Home() {
           scale: isTransitioning ? 1.05 : 1
         }}
         transition={{ duration: 0.6, ease: 'easeInOut' }}
-        style={{ filter: getFilterCss() }}
       >
-        <StreetViewer
-          ref={streetViewerRef}
-          location={currentLocation}
-          interactive={!isLoading && !showPuzzleGame && !isEditorOpen}
-          onSceneReady={handleSceneReady}
-        />
+        <div style={{ filter: getFilterCss() }} className="absolute inset-0">
+          <StreetViewer
+            ref={streetViewerRef}
+            location={currentLocation}
+            interactive={!isLoading && !showPuzzleGame && !isEditorOpen}
+            onSceneReady={handleSceneReady}
+          />
+        </div>
         
         <OverlayLayer containerRef={containerRef} />
       </motion.div>
@@ -188,6 +193,7 @@ export default function Home() {
 
       {/* Editor Sidebar */}
       <EditorSidebar
+        getContainer={getContainer}
         getCanvas={getCanvas}
         location={currentLocation}
       />

@@ -1,117 +1,106 @@
-import type { Watermark, Sticker } from '@/store/useEditorStore';
+import { toPng } from 'html-to-image';
 import type { StreetViewLocation } from '@/data/locations';
 
 interface CaptureOptions {
-  width?: number;
-  height?: number;
   filterCss?: string;
-  watermarks?: Watermark[];
-  stickers?: Sticker[];
   location?: StreetViewLocation;
   includeInfo?: boolean;
 }
 
 export async function captureScene(
-  canvas: HTMLCanvasElement,
+  containerEl: HTMLElement,
+  canvasEl: HTMLCanvasElement,
   options: CaptureOptions = {}
 ): Promise<string> {
-  const {
-    width = canvas.width,
-    height = canvas.height,
-    filterCss = 'none',
-    watermarks = [],
-    stickers = [],
-    location,
-    includeInfo = false,
-  } = options;
+  const { filterCss = 'none' } = options;
 
-  const exportCanvas = document.createElement('canvas');
-  exportCanvas.width = width;
-  exportCanvas.height = height;
-  const ctx = exportCanvas.getContext('2d');
+  const clone = containerEl.cloneNode(true) as HTMLElement;
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.width = `${containerEl.offsetWidth}px`;
+  clone.style.height = `${containerEl.offsetHeight}px`;
+  clone.style.overflow = 'hidden';
+  clone.style.pointerEvents = 'none';
 
-  if (!ctx) {
-    throw new Error('Failed to get canvas context');
+  const clonedCanvas = clone.querySelector('canvas');
+  if (clonedCanvas) {
+    const ctx = clonedCanvas.getContext('2d');
+    if (ctx) {
+      clonedCanvas.width = canvasEl.width;
+      clonedCanvas.height = canvasEl.height;
+      if (filterCss && filterCss !== 'none') {
+        ctx.filter = filterCss;
+      }
+      ctx.drawImage(canvasEl, 0, 0);
+    }
   }
 
-  if (filterCss && filterCss !== 'none') {
-    ctx.filter = filterCss;
+  const overlayDiv = clone.querySelector('[data-overlay-layer]');
+  if (overlayDiv) {
+    overlayDiv.removeAttribute('style');
+    (overlayDiv as HTMLElement).style.cssText = 'position: absolute; inset: 0; pointer-events: none;';
   }
 
-  ctx.drawImage(canvas, 0, 0, width, height);
+  document.body.appendChild(clone);
 
-  ctx.filter = 'none';
+  try {
+    const dataUrl = await toPng(clone, {
+      width: containerEl.offsetWidth,
+      height: containerEl.offsetHeight,
+      pixelRatio: 2,
+      style: {
+        filter: 'none',
+      },
+    });
 
-  if (includeInfo && location) {
-    drawLocationInfo(ctx, location, width, height);
+    if (options.includeInfo && options.location) {
+      return addLocationInfo(dataUrl, options.location);
+    }
+
+    return dataUrl;
+  } finally {
+    document.body.removeChild(clone);
   }
-
-  watermarks.forEach(wm => {
-    const x = (wm.x / 100) * width;
-    const y = (wm.y / 100) * height;
-
-    ctx.save();
-    ctx.globalAlpha = wm.opacity;
-    ctx.translate(x, y);
-    ctx.rotate((wm.rotation * Math.PI) / 180);
-    ctx.font = `${wm.fontSize}px ${wm.fontFamily}`;
-    ctx.fillStyle = wm.color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillText(wm.text, 0, 0);
-    ctx.restore();
-  });
-
-  stickers.forEach(sticker => {
-    const x = (sticker.x / 100) * width;
-    const y = (sticker.y / 100) * height;
-    const fontSize = 48 * sticker.scale;
-
-    ctx.save();
-    ctx.globalAlpha = sticker.opacity;
-    ctx.translate(x, y);
-    ctx.rotate((sticker.rotation * Math.PI) / 180);
-    ctx.scale(sticker.scale, sticker.scale);
-    ctx.font = `${fontSize}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(sticker.emoji, 0, 0);
-    ctx.restore();
-  });
-
-  return exportCanvas.toDataURL('image/png', 1.0);
 }
 
-function drawLocationInfo(
-  ctx: CanvasRenderingContext2D,
-  location: StreetViewLocation,
-  width: number,
-  height: number
-) {
-  const gradient = ctx.createLinearGradient(0, height - 200, 0, height);
-  gradient.addColorStop(0, 'rgba(0,0,0,0)');
-  gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, height - 200, width, 200);
+async function addLocationInfo(dataUrl: string, location: StreetViewLocation): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
 
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 10;
+      ctx.drawImage(img, 0, 0);
 
-  ctx.font = 'bold 48px system-ui, sans-serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'left';
-  ctx.fillText(location.name, 48, height - 100);
+      const gradientH = img.height * 0.15;
+      const gradient = ctx.createLinearGradient(0, canvas.height - gradientH, 0, canvas.height);
+      gradient.addColorStop(0, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, canvas.height - gradientH, canvas.width, gradientH);
 
-  ctx.font = '24px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillText(`${location.city}, ${location.country}`, 48, height - 56);
+      const scale = canvas.width / 1920;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 10;
 
-  ctx.restore();
+      ctx.font = `bold ${Math.round(48 * scale)}px system-ui, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(location.name, Math.round(48 * scale), canvas.height - Math.round(56 * scale));
+
+      ctx.font = `${Math.round(24 * scale)}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText(`${location.city}, ${location.country}`, Math.round(48 * scale), canvas.height - Math.round(20 * scale));
+      ctx.restore();
+
+      resolve(canvas.toDataURL('image/png', 1.0));
+    };
+    img.src = dataUrl;
+  });
 }
 
 export function downloadImage(dataUrl: string, filename: string) {
@@ -124,7 +113,8 @@ export function downloadImage(dataUrl: string, filename: string) {
 }
 
 export async function createShareCard(
-  backgroundCanvas: HTMLCanvasElement,
+  containerEl: HTMLElement,
+  canvasEl: HTMLCanvasElement,
   options: CaptureOptions & {
     cardStyle?: 'minimal' | 'elegant' | 'vibrant';
   } = {}
@@ -132,10 +122,10 @@ export async function createShareCard(
   const {
     location,
     filterCss = 'none',
-    watermarks = [],
-    stickers = [],
     cardStyle = 'elegant',
   } = options;
+
+  const sceneDataUrl = await captureScene(containerEl, canvasEl, { filterCss });
 
   const cardWidth = 1200;
   const cardHeight = 1500;
@@ -143,11 +133,7 @@ export async function createShareCard(
   const cardCanvas = document.createElement('canvas');
   cardCanvas.width = cardWidth;
   cardCanvas.height = cardHeight;
-  const ctx = cardCanvas.getContext('2d');
-
-  if (!ctx) {
-    throw new Error('Failed to get canvas context');
-  }
+  const ctx = cardCanvas.getContext('2d')!;
 
   if (cardStyle === 'minimal') {
     ctx.fillStyle = '#ffffff';
@@ -167,55 +153,19 @@ export async function createShareCard(
   const photoX = 40;
   const photoY = 40;
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(photoX, photoY, photoWidth, photoHeight, 24);
-  ctx.clip();
-
-  if (filterCss && filterCss !== 'none') {
-    ctx.filter = filterCss;
-  }
-
-  ctx.drawImage(backgroundCanvas, photoX, photoY, photoWidth, photoHeight);
-  ctx.restore();
-
-  watermarks.forEach(wm => {
-    const x = photoX + (wm.x / 100) * photoWidth;
-    const y = photoY + (wm.y / 100) * photoHeight;
-    const scale = photoWidth / backgroundCanvas.width;
-
-    ctx.save();
-    ctx.globalAlpha = wm.opacity;
-    ctx.translate(x, y);
-    ctx.rotate((wm.rotation * Math.PI) / 180);
-    ctx.font = `${wm.fontSize * scale}px ${wm.fontFamily}`;
-    ctx.fillStyle = wm.color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillText(wm.text, 0, 0);
-    ctx.restore();
-  });
-
-  stickers.forEach(sticker => {
-    const x = photoX + (sticker.x / 100) * photoWidth;
-    const y = photoY + (sticker.y / 100) * photoHeight;
-    const scale = (photoWidth / backgroundCanvas.width) * sticker.scale;
-    const fontSize = 48 * scale;
-
-    ctx.save();
-    ctx.globalAlpha = sticker.opacity;
-    ctx.translate(x, y);
-    ctx.rotate((sticker.rotation * Math.PI) / 180);
-    ctx.scale(sticker.scale, sticker.scale);
-    ctx.font = `${fontSize}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(sticker.emoji, 0, 0);
-    ctx.restore();
+  await new Promise<void>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(photoX, photoY, photoWidth, photoHeight, 24);
+      ctx.clip();
+      ctx.drawImage(img, photoX, photoY, photoWidth, photoHeight);
+      ctx.restore();
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = sceneDataUrl;
   });
 
   const textY = photoY + photoHeight + 80;
@@ -240,7 +190,6 @@ export async function createShareCard(
   }
 
   const footerY = cardHeight - 80;
-  
   ctx.save();
   if (cardStyle === 'minimal') {
     ctx.fillStyle = '#06b6d4';
@@ -252,11 +201,9 @@ export async function createShareCard(
     gradient.addColorStop(1, '#8b5cf6');
     ctx.fillStyle = gradient;
   }
-  
   ctx.font = 'bold 28px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('🌍 全球街景漫游', cardWidth / 2, footerY);
-  
   ctx.font = '20px system-ui, sans-serif';
   ctx.fillStyle = subTextColor;
   ctx.fillText('探索世界的每一个角落', cardWidth / 2, footerY + 35);
