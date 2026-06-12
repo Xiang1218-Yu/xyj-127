@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map } from 'lucide-react';
-import StreetViewer from '@/components/StreetViewer';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Gamepad2, Brain } from 'lucide-react';
+import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
+import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
 import { LocationInfoCard } from '@/components/LocationInfoCard';
 import { LocationListSidebar } from '@/components/LocationListSidebar';
 import { TravelMap } from '@/components/TravelMap';
@@ -17,7 +18,11 @@ export default function Home() {
   const [showInfo, setShowInfo] = useState(true);
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showPuzzleGame, setShowPuzzleGame] = useState(false);
+  const [puzzleScreenshot, setPuzzleScreenshot] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   
+  const streetViewerRef = useRef<StreetViewerRef>(null);
   const { addVisitedLocation, uniqueLocations } = useTravelStore();
 
   useEffect(() => {
@@ -60,6 +65,23 @@ export default function Home() {
     setIsLoading(false);
   }, []);
 
+  const handleStartPuzzleGame = useCallback(() => {
+    setIsCapturing(true);
+    setTimeout(() => {
+      const screenshot = streetViewerRef.current?.captureScreenshot();
+      if (screenshot) {
+        setPuzzleScreenshot(screenshot);
+        setShowPuzzleGame(true);
+      }
+      setIsCapturing(false);
+    }, 300);
+  }, []);
+
+  const handleClosePuzzleGame = useCallback(() => {
+    setShowPuzzleGame(false);
+    setPuzzleScreenshot(null);
+  }, []);
+
   useEffect(() => {
     if (!isLoading) return;
     const timer = setTimeout(() => {
@@ -91,10 +113,13 @@ export default function Home() {
       if (e.code === 'KeyM' && !e.repeat) {
         setShowTravelMap(prev => !prev);
       }
+      if (e.code === 'KeyP' && !e.repeat && !showPuzzleGame) {
+        handleStartPuzzleGame();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRandom, toggleInfo]);
+  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
@@ -108,8 +133,9 @@ export default function Home() {
         transition={{ duration: 0.6, ease: 'easeInOut' }}
       >
         <StreetViewer
+          ref={streetViewerRef}
           location={currentLocation}
-          interactive={!isLoading}
+          interactive={!isLoading && !showPuzzleGame}
           onSceneReady={handleSceneReady}
         />
       </motion.div>
@@ -127,6 +153,8 @@ export default function Home() {
         onToggleInfo={toggleInfo}
         onOpenList={() => setShowLocationList(true)}
         onOpenMap={() => setShowTravelMap(true)}
+        onStartGame={handleStartPuzzleGame}
+        isCapturing={isCapturing}
       />
 
       {/* Location Info Card */}
@@ -162,6 +190,17 @@ export default function Home() {
         onClose={() => setShowTravelMap(false)}
         onSelectLocation={handleMapLocationSelect}
       />
+
+      {/* Puzzle Game Modal */}
+      <AnimatePresence>
+        {showPuzzleGame && puzzleScreenshot && (
+          <PanoramaPuzzleGame
+            screenshot={puzzleScreenshot}
+            location={currentLocation}
+            onClose={handleClosePuzzleGame}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -208,9 +247,11 @@ interface HeaderProps {
   onToggleInfo: () => void;
   onOpenList: () => void;
   onOpenMap: () => void;
+  onStartGame: () => void;
+  isCapturing: boolean;
 }
 
-function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap }: HeaderProps) {
+function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, isCapturing }: HeaderProps) {
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
@@ -242,6 +283,20 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap }:
         </div>
 
         <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onStartGame}
+            disabled={isCapturing}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-purple-400/30 text-purple-200 hover:from-purple-500/30 hover:to-pink-500/30 transition-all disabled:opacity-50"
+          >
+            {isCapturing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Brain className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium hidden sm:inline">空间训练</span>
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -351,6 +406,11 @@ function ControlHint() {
         <span className="flex items-center gap-1.5">
           <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">I</kbd>
           隐藏信息
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500/30 to-pink-500/30 font-mono text-[10px] text-purple-200 border border-purple-400/30">P</kbd>
+          空间训练
         </span>
       </div>
     </motion.div>
