@@ -20,7 +20,7 @@ export default function StreetViewer({
   return (
     <Canvas
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 75, near: 0.1, far: 1000 }}
+      camera={{ fov: 75, near: 0.1, far: 2000 }}
       style={{ background: '#000', width: '100%', height: '100%' }}
     >
       <PanoramaSphere location={location} onLoad={onSceneReady} />

@@ -82,6 +82,7 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
     }, 8000);
 
     const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
 
     loader.load(
       url,
@@ -90,6 +91,8 @@ export function usePanoramaTexture({ url, onLoad, onError }: UsePanoramaTextureO
         clearTimeout(timeoutId);
         loadedTexture.mapping = THREE.EquirectangularReflectionMapping;
         loadedTexture.colorSpace = THREE.SRGBColorSpace;
+        loadedTexture.needsUpdate = true;
+        console.log('Panorama loaded successfully:', url);
         setTexture(loadedTexture);
         setIsLoading(false);
         onLoadRef.current?.();

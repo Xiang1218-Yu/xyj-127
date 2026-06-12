@@ -11,7 +11,6 @@ interface PanoramaSphereProps {
 
 export function PanoramaSphere({ location, onLoad }: PanoramaSphereProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
 
   const { texture, isLoading } = usePanoramaTexture({
     url: location.panoramaUrl,
@@ -29,7 +28,6 @@ export function PanoramaSphere({ location, onLoad }: PanoramaSphereProps) {
   return (
     <mesh ref={meshRef} scale={[-1, 1, 1]} geometry={geometry}>
       <meshBasicMaterial
-        ref={materialRef}
         map={texture}
         side={THREE.BackSide}
         transparent={false}

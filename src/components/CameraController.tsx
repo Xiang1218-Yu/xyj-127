@@ -22,7 +22,7 @@ export function CameraController({
   useEffect(() => {
     const phi = THREE.MathUtils.degToRad(90 - initialPitch);
     const theta = THREE.MathUtils.degToRad(initialHeading);
-    const radius = 1;
+    const radius = 400;
 
     camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
     camera.position.y = radius * Math.cos(phi);
