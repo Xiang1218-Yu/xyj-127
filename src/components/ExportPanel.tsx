@@ -4,11 +4,12 @@ import { Download, Image as ImageIcon, Share2, Loader2, Check, X } from 'lucide-
 import { useEditorStore } from '@/store/useEditorStore';
 import { captureScene, createShareCard, downloadImage } from '@/utils/screenshot';
 import type { StreetViewLocation } from '@/data/locations';
+import type { StreetViewerRef } from '@/components/StreetViewer';
 import { cn } from '@/lib/utils';
 
 interface ExportPanelProps {
-  getContainer: () => HTMLElement | null;
   getCanvas: () => HTMLCanvasElement | null;
+  getStreetViewer: () => StreetViewerRef | null;
   location: StreetViewLocation;
 }
 
@@ -20,24 +21,55 @@ const CARD_STYLES: { id: CardStyle; name: string; preview: string }[] = [
   { id: 'vibrant', name: '活力', preview: 'from-cyan-400 via-purple-500 to-pink-500' },
 ];
 
-export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelProps) {
-  const { getFilterCss } = useEditorStore();
+const EXPORT_WIDTH = 1920;
+const EXPORT_HEIGHT = 1080;
+
+export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPanelProps) {
+  const { getFilterCss, watermarks, stickers } = useEditorStore();
   const [isExporting, setIsExporting] = useState(false);
   const [includeInfo, setIncludeInfo] = useState(true);
   const [cardStyle, setCardStyle] = useState<CardStyle>('elegant');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'screenshot' | 'card' | null>(null);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const getSceneData = (): { dataUrl: string; width: number; height: number } | null => {
+    const streetViewer = getStreetViewer();
+    if (streetViewer) {
+      const dataUrl = streetViewer.captureScreenshot();
+      if (dataUrl) {
+        return { dataUrl, width: EXPORT_WIDTH, height: EXPORT_HEIGHT };
+      }
+    }
+    const canvas = getCanvas();
+    if (canvas && canvas.width > 100) {
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        width: Math.max(canvas.width, EXPORT_WIDTH),
+        height: Math.max(canvas.height, EXPORT_HEIGHT),
+      };
+    }
+    return null;
+  };
 
   const handleCaptureScreenshot = async () => {
-    const container = getContainer();
-    const canvas = getCanvas();
-    if (!container || !canvas) return;
+    setErrorMsg(null);
+    const scene = getSceneData();
+    if (!scene) {
+      setErrorMsg('场景加载中，请稍后再试');
+      return;
+    }
 
     setIsExporting(true);
     try {
-      const dataUrl = await captureScene(container, canvas, {
+      const dataUrl = await captureScene({
+        sceneDataUrl: scene.dataUrl,
+        sceneWidth: scene.width,
+        sceneHeight: scene.height,
         filterCss: getFilterCss(),
+        watermarks: [...watermarks],
+        stickers: [...stickers],
         location,
         includeInfo,
       });
@@ -45,20 +77,29 @@ export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelPr
       setPreviewType('screenshot');
     } catch (err) {
       console.error('Failed to capture screenshot:', err);
+      setErrorMsg('截图失败，请重试');
     } finally {
       setIsExporting(false);
     }
   };
 
   const handleCreateShareCard = async () => {
-    const container = getContainer();
-    const canvas = getCanvas();
-    if (!container || !canvas) return;
+    setErrorMsg(null);
+    const scene = getSceneData();
+    if (!scene) {
+      setErrorMsg('场景加载中，请稍后再试');
+      return;
+    }
 
     setIsExporting(true);
     try {
-      const dataUrl = await createShareCard(container, canvas, {
+      const dataUrl = await createShareCard({
+        sceneDataUrl: scene.dataUrl,
+        sceneWidth: scene.width,
+        sceneHeight: scene.height,
         filterCss: getFilterCss(),
+        watermarks: [...watermarks],
+        stickers: [...stickers],
         location,
         cardStyle,
       });
@@ -66,6 +107,7 @@ export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelPr
       setPreviewType('card');
     } catch (err) {
       console.error('Failed to create share card:', err);
+      setErrorMsg('生成失败，请重试');
     } finally {
       setIsExporting(false);
     }
@@ -133,6 +175,16 @@ export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelPr
         </div>
       </div>
 
+      {errorMsg && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-3 py-2 bg-red-500/15 border border-red-500/30 rounded-xl text-red-300 text-xs"
+        >
+          {errorMsg}
+        </motion.div>
+      )}
+
       <div className="space-y-3 pt-2">
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -171,7 +223,7 @@ export function ExportPanel({ getContainer, getCanvas, location }: ExportPanelPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-8"
             onClick={handleClosePreview}
           >
             <motion.div

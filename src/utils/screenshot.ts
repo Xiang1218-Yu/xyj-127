@@ -1,105 +1,126 @@
-import { toPng } from 'html-to-image';
 import type { StreetViewLocation } from '@/data/locations';
+import type { Watermark, Sticker } from '@/store/useEditorStore';
 
 interface CaptureOptions {
+  sceneDataUrl: string;
+  sceneWidth: number;
+  sceneHeight: number;
   filterCss?: string;
+  watermarks?: Watermark[];
+  stickers?: Sticker[];
   location?: StreetViewLocation;
   includeInfo?: boolean;
+  exportWidth?: number;
+  exportHeight?: number;
 }
 
 export async function captureScene(
-  containerEl: HTMLElement,
-  canvasEl: HTMLCanvasElement,
-  options: CaptureOptions = {}
+  options: CaptureOptions
 ): Promise<string> {
-  const { filterCss = 'none' } = options;
+  const {
+    sceneDataUrl,
+    sceneWidth,
+    sceneHeight,
+    filterCss = 'none',
+    watermarks = [],
+    stickers = [],
+    location,
+    includeInfo = false,
+  } = options;
 
-  const clone = containerEl.cloneNode(true) as HTMLElement;
-  clone.style.position = 'absolute';
-  clone.style.left = '-9999px';
-  clone.style.top = '0';
-  clone.style.width = `${containerEl.offsetWidth}px`;
-  clone.style.height = `${containerEl.offsetHeight}px`;
-  clone.style.overflow = 'hidden';
-  clone.style.pointerEvents = 'none';
-
-  const clonedCanvas = clone.querySelector('canvas');
-  if (clonedCanvas) {
-    const ctx = clonedCanvas.getContext('2d');
-    if (ctx) {
-      clonedCanvas.width = canvasEl.width;
-      clonedCanvas.height = canvasEl.height;
-      if (filterCss && filterCss !== 'none') {
-        ctx.filter = filterCss;
-      }
-      ctx.drawImage(canvasEl, 0, 0);
-    }
+  if (!sceneDataUrl) {
+    throw new Error('No scene data');
   }
 
-  const overlayDiv = clone.querySelector('[data-overlay-layer]');
-  if (overlayDiv) {
-    overlayDiv.removeAttribute('style');
-    (overlayDiv as HTMLElement).style.cssText = 'position: absolute; inset: 0; pointer-events: none;';
-  }
-
-  document.body.appendChild(clone);
-
-  try {
-    const dataUrl = await toPng(clone, {
-      width: containerEl.offsetWidth,
-      height: containerEl.offsetHeight,
-      pixelRatio: 2,
-      style: {
-        filter: 'none',
-      },
-    });
-
-    if (options.includeInfo && options.location) {
-      return addLocationInfo(dataUrl, options.location);
-    }
-
-    return dataUrl;
-  } finally {
-    document.body.removeChild(clone);
-  }
-}
-
-async function addLocationInfo(dataUrl: string, location: StreetViewLocation): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d')!;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = sceneWidth;
+        canvas.height = sceneHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No 2D context'));
+          return;
+        }
 
-      ctx.drawImage(img, 0, 0);
+        if (filterCss && filterCss !== 'none') {
+          ctx.filter = filterCss;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
 
-      const gradientH = img.height * 0.15;
-      const gradient = ctx.createLinearGradient(0, canvas.height - gradientH, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(0,0,0,0)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, canvas.height - gradientH, canvas.width, gradientH);
+        stickers.forEach(sticker => {
+          const x = (sticker.x / 100) * canvas.width;
+          const y = (sticker.y / 100) * canvas.height;
+          const size = Math.round(48 * sticker.scale * (canvas.width / 1920));
 
-      const scale = canvas.width / 1920;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 10;
+          ctx.save();
+          ctx.globalAlpha = sticker.opacity;
+          ctx.translate(x, y);
+          ctx.rotate((sticker.rotation * Math.PI) / 180);
+          ctx.font = `${size}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Symbola, serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(sticker.emoji, 0, 0);
+          ctx.restore();
+        });
 
-      ctx.font = `bold ${Math.round(48 * scale)}px system-ui, sans-serif`;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.fillText(location.name, Math.round(48 * scale), canvas.height - Math.round(56 * scale));
+        watermarks.forEach(wm => {
+          const x = (wm.x / 100) * canvas.width;
+          const y = (wm.y / 100) * canvas.height;
+          const scale = canvas.width / 1920;
+          const fontSize = Math.max(12, Math.round(wm.fontSize * scale));
 
-      ctx.font = `${Math.round(24 * scale)}px system-ui, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.fillText(`${location.city}, ${location.country}`, Math.round(48 * scale), canvas.height - Math.round(20 * scale));
-      ctx.restore();
+          ctx.save();
+          ctx.globalAlpha = wm.opacity;
+          ctx.translate(x, y);
+          ctx.rotate((wm.rotation * Math.PI) / 180);
+          ctx.font = `${fontSize}px ${wm.fontFamily}`;
+          ctx.fillStyle = wm.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,0.8)';
+          ctx.shadowBlur = Math.round(4 * scale);
+          ctx.shadowOffsetX = Math.round(2 * scale);
+          ctx.shadowOffsetY = Math.round(2 * scale);
+          ctx.fillText(wm.text, 0, 0);
+          ctx.restore();
+        });
 
-      resolve(canvas.toDataURL('image/png', 1.0));
+        if (includeInfo && location) {
+          const gradientH = canvas.height * 0.15;
+          const gradient = ctx.createLinearGradient(0, canvas.height - gradientH, 0, canvas.height);
+          gradient.addColorStop(0, 'rgba(0,0,0,0)');
+          gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, canvas.height - gradientH, canvas.width, gradientH);
+
+          const s = canvas.width / 1920;
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.8)';
+          ctx.shadowBlur = Math.round(10 * s);
+
+          ctx.font = `bold ${Math.round(48 * s)}px system-ui, sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.fillText(location.name, Math.round(48 * s), canvas.height - Math.round(56 * s));
+
+          ctx.font = `${Math.round(24 * s)}px system-ui, sans-serif`;
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.fillText(`${location.city}, ${location.country}`, Math.round(48 * s), canvas.height - Math.round(20 * s));
+          ctx.restore();
+        }
+
+        resolve(canvas.toDataURL('image/png', 1.0));
+      } catch (e) {
+        reject(e);
+      }
     };
-    img.src = dataUrl;
+    img.onerror = () => reject(new Error('Failed to load scene image'));
+    img.src = sceneDataUrl;
   });
 }
 
@@ -112,20 +133,39 @@ export function downloadImage(dataUrl: string, filename: string) {
   document.body.removeChild(link);
 }
 
+interface ShareCardOptions {
+  sceneDataUrl: string;
+  sceneWidth: number;
+  sceneHeight: number;
+  filterCss?: string;
+  watermarks?: Watermark[];
+  stickers?: Sticker[];
+  location?: StreetViewLocation;
+  cardStyle?: 'minimal' | 'elegant' | 'vibrant';
+}
+
 export async function createShareCard(
-  containerEl: HTMLElement,
-  canvasEl: HTMLCanvasElement,
-  options: CaptureOptions & {
-    cardStyle?: 'minimal' | 'elegant' | 'vibrant';
-  } = {}
+  options: ShareCardOptions
 ): Promise<string> {
   const {
-    location,
+    sceneDataUrl,
+    sceneWidth,
+    sceneHeight,
     filterCss = 'none',
+    watermarks = [],
+    stickers = [],
+    location,
     cardStyle = 'elegant',
   } = options;
 
-  const sceneDataUrl = await captureScene(containerEl, canvasEl, { filterCss });
+  const photoDataUrl = await captureScene({
+    sceneDataUrl,
+    sceneWidth,
+    sceneHeight,
+    filterCss,
+    watermarks,
+    stickers,
+  });
 
   const cardWidth = 1200;
   const cardHeight = 1500;
@@ -155,17 +195,28 @@ export async function createShareCard(
 
   await new Promise<void>((resolve) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(photoX, photoY, photoWidth, photoHeight, 24);
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(photoX, photoY, photoWidth, photoHeight, 24);
+      } else {
+        const r = 24;
+        ctx.moveTo(photoX + r, photoY);
+        ctx.arcTo(photoX + photoWidth, photoY, photoX + photoWidth, photoY + photoHeight, r);
+        ctx.arcTo(photoX + photoWidth, photoY + photoHeight, photoX, photoY + photoHeight, r);
+        ctx.arcTo(photoX, photoY + photoHeight, photoX, photoY, r);
+        ctx.arcTo(photoX, photoY, photoX + photoWidth, photoY, r);
+      }
+      ctx.closePath();
       ctx.clip();
       ctx.drawImage(img, photoX, photoY, photoWidth, photoHeight);
       ctx.restore();
       resolve();
     };
     img.onerror = () => resolve();
-    img.src = sceneDataUrl;
+    img.src = photoDataUrl;
   });
 
   const textY = photoY + photoHeight + 80;
@@ -185,7 +236,7 @@ export async function createShareCard(
 
     ctx.font = '24px system-ui, sans-serif';
     ctx.fillStyle = subTextColor;
-    ctx.fillText(location.description, cardWidth / 2, textY + 100, cardWidth - 160);
+    wrapText(ctx, location.description, cardWidth / 2, textY + 100, cardWidth - 160, 36);
     ctx.restore();
   }
 
@@ -203,6 +254,7 @@ export async function createShareCard(
   }
   ctx.font = 'bold 28px system-ui, sans-serif';
   ctx.textAlign = 'center';
+  ctx.fillStyle = cardStyle === 'minimal' ? (ctx.fillStyle as string) : '#ffffff';
   ctx.fillText('🌍 全球街景漫游', cardWidth / 2, footerY);
   ctx.font = '20px system-ui, sans-serif';
   ctx.fillStyle = subTextColor;
@@ -210,4 +262,23 @@ export async function createShareCard(
   ctx.restore();
 
   return cardCanvas.toDataURL('image/png', 1.0);
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const chars = text.split('');
+  let line = '';
+  let lineY = y;
+
+  for (let n = 0; n < chars.length; n++) {
+    const test = line + chars[n];
+    const metrics = ctx.measureText(test);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line, x, lineY);
+      line = chars[n];
+      lineY += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, lineY);
 }

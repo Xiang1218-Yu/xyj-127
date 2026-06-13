@@ -16,6 +16,7 @@ export function OverlayLayer({ containerRef }: OverlayLayerProps) {
     updateSticker,
     selectItem,
     isEditorOpen,
+    setEditorOpen,
   } = useEditorStore();
 
   const dragRef = useRef<{
@@ -37,7 +38,7 @@ export function OverlayLayer({ containerRef }: OverlayLayerProps) {
     if (!isEditorOpen) return;
     e.preventDefault();
     e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     selectItem(id, type);
     dragRef.current = {
@@ -54,6 +55,7 @@ export function OverlayLayer({ containerRef }: OverlayLayerProps) {
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const drag = dragRef.current;
     if (!drag?.active) return;
+    e.stopPropagation();
 
     const container = containerRef.current;
     if (!container) return;
@@ -72,25 +74,39 @@ export function OverlayLayer({ containerRef }: OverlayLayerProps) {
     }
   }, [containerRef, updateWatermark, updateSticker]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (dragRef.current) {
       dragRef.current.active = false;
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
       dragRef.current = null;
     }
   }, []);
 
-  const hasContent = watermarks.length > 0 || stickers.length > 0;
-  if (!hasContent) return null;
+  const handleLayerPointerDown = useCallback((e: React.PointerEvent) => {
+    if (!isEditorOpen) return;
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      selectItem(null, null);
+      setEditorOpen(false);
+    }
+  }, [isEditorOpen, selectItem, setEditorOpen]);
 
   return (
     <div
       data-overlay-layer
-      className={cn(
-        'absolute inset-0',
-        isEditorOpen ? 'z-20' : 'z-20 pointer-events-none'
-      )}
+      onPointerDown={handleLayerPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      className={cn(
+        'absolute inset-0 z-20',
+        isEditorOpen && 'pointer-events-auto',
+        !isEditorOpen && 'pointer-events-none'
+      )}
     >
       {watermarks.map((wm) => (
         <div

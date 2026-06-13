@@ -7,10 +7,11 @@ import { StickerPanel } from '@/components/StickerPanel';
 import { ExportPanel } from '@/components/ExportPanel';
 import { cn } from '@/lib/utils';
 import type { StreetViewLocation } from '@/data/locations';
+import type { StreetViewerRef } from '@/components/StreetViewer';
 
 interface EditorSidebarProps {
-  getContainer: () => HTMLElement | null;
   getCanvas: () => HTMLCanvasElement | null;
+  getStreetViewer: () => StreetViewerRef | null;
   location: StreetViewLocation;
 }
 
@@ -21,7 +22,7 @@ const TABS = [
   { id: 'export' as const, name: '导出', icon: Download },
 ] as const;
 
-export function EditorSidebar({ getContainer, getCanvas, location }: EditorSidebarProps) {
+export function EditorSidebar({ getCanvas, getStreetViewer, location }: EditorSidebarProps) {
   const { isEditorOpen, setEditorOpen, activeTab, setActiveTab, clearAll } = useEditorStore();
 
   const renderPanel = () => {
@@ -33,7 +34,7 @@ export function EditorSidebar({ getContainer, getCanvas, location }: EditorSideb
       case 'sticker':
         return <StickerPanel />;
       case 'export':
-        return <ExportPanel getContainer={getContainer} getCanvas={getCanvas} location={location} />;
+        return <ExportPanel getCanvas={getCanvas} getStreetViewer={getStreetViewer} location={location} />;
       default:
         return null;
     }
@@ -47,8 +48,8 @@ export function EditorSidebar({ getContainer, getCanvas, location }: EditorSideb
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setEditorOpen(false)}
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm z-40"
+            className="absolute inset-0 z-10"
+            style={{ pointerEvents: 'none' }}
           />
           
           <motion.div

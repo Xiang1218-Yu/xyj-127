@@ -35,10 +35,6 @@ export default function Home() {
     return canvas;
   }, []);
 
-  const getContainer = useCallback(() => {
-    return containerRef.current;
-  }, []);
-
   useEffect(() => {
     addVisitedLocation(currentLocation.id);
   }, []);
@@ -193,8 +189,8 @@ export default function Home() {
 
       {/* Editor Sidebar */}
       <EditorSidebar
-        getContainer={getContainer}
         getCanvas={getCanvas}
+        getStreetViewer={() => streetViewerRef.current}
         location={currentLocation}
       />
 
