@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin } from 'lucide-react';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin, Volume2 } from 'lucide-react';
 import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
 import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
 import GeoQuizGame from '@/components/GeoQuizGame';
@@ -9,9 +9,11 @@ import { LocationListSidebar } from '@/components/LocationListSidebar';
 import { TravelMap } from '@/components/TravelMap';
 import { EditorSidebar } from '@/components/EditorSidebar';
 import { OverlayLayer } from '@/components/OverlayLayer';
+import { AmbientSoundControl } from '@/components/AmbientSoundControl';
 import { streetViewLocations, getRandomLocation, type StreetViewLocation } from '@/data/locations';
 import { useTravelStore } from '@/store/useTravelStore';
 import { useEditorStore } from '@/store/useEditorStore';
+import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -31,6 +33,17 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { addVisitedLocation, uniqueLocations } = useTravelStore();
   const { getFilterCss, isEditorOpen, setEditorOpen } = useEditorStore();
+  const {
+    isPlaying,
+    isMuted,
+    volume,
+    currentSounds,
+    initAudioContext,
+    updateForLocation,
+    setVolume,
+    toggleMute,
+    togglePlay
+  } = useAmbientSound();
 
   const getCanvas = useCallback(() => {
     const canvas = document.querySelector('canvas');
@@ -40,6 +53,10 @@ export default function Home() {
   useEffect(() => {
     addVisitedLocation(currentLocation.id);
   }, []);
+
+  useEffect(() => {
+    updateForLocation(currentLocation.tags);
+  }, [currentLocation.id, currentLocation.tags, updateForLocation]);
 
   const handleRandom = useCallback(() => {
     setIsTransitioning(true);
@@ -141,13 +158,18 @@ export default function Home() {
       if (e.code === 'KeyE' && !e.repeat) {
         handleToggleEditor();
       }
+      if (e.code === 'KeyS' && !e.repeat && !isEditorOpen) {
+        e.preventDefault();
+        initAudioContext();
+        toggleMute();
+      }
       if (e.code === 'Escape' && !e.repeat && isEditorOpen) {
         setEditorOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, showGeoQuiz, isEditorOpen, setEditorOpen, handleToggleEditor]);
+  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, showGeoQuiz, isEditorOpen, setEditorOpen, handleToggleEditor, initAudioContext, toggleMute]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
@@ -226,6 +248,17 @@ export default function Home() {
 
       {/* Compass Indicator */}
       <CompassIndicator />
+
+      {/* Ambient Sound Control */}
+      <AmbientSoundControl
+        isPlaying={isPlaying}
+        isMuted={isMuted}
+        volume={volume}
+        currentSounds={currentSounds}
+        onTogglePlay={togglePlay}
+        onToggleMute={toggleMute}
+        onVolumeChange={setVolume}
+      />
 
       {/* Travel Map Modal */}
       <TravelMap
@@ -497,6 +530,11 @@ function ControlHint() {
         <span className="flex items-center gap-1.5">
           <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500/30 to-pink-500/30 font-mono text-[10px] text-purple-200 border border-purple-400/30">E</kbd>
           图片编辑
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-500/30 to-blue-500/30 font-mono text-[10px] text-cyan-200 border border-cyan-400/30">S</kbd>
+          环境音效
         </span>
       </div>
     </motion.div>
