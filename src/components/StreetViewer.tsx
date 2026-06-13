@@ -1,11 +1,13 @@
 import { Canvas, useThree } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import { PanoramaSphere } from '@/components/PanoramaSphere';
+import { WeatherParticles } from '@/components/WeatherParticles';
 import { CameraController } from '@/components/CameraController';
 import type { StreetViewLocation } from '@/data/locations';
 import { useRef, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useEditorStore } from '@/store/useEditorStore';
 
 export interface StreetViewerRef {
   captureScreenshot: () => string | null;
@@ -60,6 +62,8 @@ const StreetViewer = forwardRef<StreetViewerRef, StreetViewerProps>(function Str
 }, ref) {
   const sceneContextRef = useRef<SceneContext | null>(null);
   const isNight = location.id.includes('night') || location.id.includes('aurora') || location.id.includes('iceland');
+  const weather = useEditorStore((s) => s.weather);
+  const weatherIntensity = useEditorStore((s) => s.weatherIntensity);
 
   const handleSceneReady = useCallback((ctx: SceneContext) => {
     sceneContextRef.current = ctx;
@@ -110,6 +114,7 @@ const StreetViewer = forwardRef<StreetViewerRef, StreetViewerProps>(function Str
       <DebugCube />
       <ambientLight intensity={0.3} />
       {isNight && <Stars radius={100} depth={50} count={2000} factor={4} fade speed={1} />}
+      <WeatherParticles weather={weather} intensity={weatherIntensity} />
     </Canvas>
   );
 });

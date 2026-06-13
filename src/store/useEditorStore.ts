@@ -34,11 +34,33 @@ export type FilterType =
   | 'ocean' 
   | 'forest';
 
+export type WeatherType = 
+  | 'none'
+  | 'rain'
+  | 'snow'
+  | 'fog'
+  | 'sand';
+
 export interface Filter {
   id: FilterType;
   name: string;
   cssFilter: string;
 }
+
+export interface WeatherConfig {
+  id: WeatherType;
+  name: string;
+  icon: string;
+  description: string;
+}
+
+export const WEATHERS: WeatherConfig[] = [
+  { id: 'none', name: '晴天', icon: '☀️', description: '晴朗无云' },
+  { id: 'rain', name: '雨天', icon: '🌧️', description: '淅沥雨滴' },
+  { id: 'snow', name: '雪天', icon: '❄️', description: '飘雪纷飞' },
+  { id: 'fog', name: '雾天', icon: '🌫️', description: '薄雾朦胧' },
+  { id: 'sand', name: '沙尘', icon: '🌪️', description: '沙尘漫天' },
+];
 
 export const FILTERS: Filter[] = [
   { id: 'none', name: '原图', cssFilter: 'none' },
@@ -75,9 +97,11 @@ export const COLOR_PRESETS = [
 
 interface EditorState {
   isEditorOpen: boolean;
-  activeTab: 'watermark' | 'sticker' | 'filter' | 'export';
+  activeTab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'export';
   
   filter: FilterType;
+  weather: WeatherType;
+  weatherIntensity: number;
   watermarks: Watermark[];
   stickers: Sticker[];
   
@@ -85,9 +109,11 @@ interface EditorState {
   selectedItemType: 'watermark' | 'sticker' | null;
   
   setEditorOpen: (open: boolean) => void;
-  setActiveTab: (tab: 'watermark' | 'sticker' | 'filter' | 'export') => void;
+  setActiveTab: (tab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'export') => void;
   
   setFilter: (filter: FilterType) => void;
+  setWeather: (weather: WeatherType) => void;
+  setWeatherIntensity: (intensity: number) => void;
   
   addWatermark: (text: string) => void;
   updateWatermark: (id: string, updates: Partial<Watermark>) => void;
@@ -112,6 +138,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   activeTab: 'filter',
   
   filter: 'none',
+  weather: 'none',
+  weatherIntensity: 0.5,
   watermarks: [],
   stickers: [],
   
@@ -123,6 +151,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   
   setFilter: (filter) => set({ filter }),
+  setWeather: (weather) => set({ weather }),
+  setWeatherIntensity: (weatherIntensity) => set({ weatherIntensity: Math.max(0, Math.min(1, weatherIntensity)) }),
   
   addWatermark: (text) => set((state) => ({
     watermarks: [...state.watermarks, {
@@ -183,6 +213,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     watermarks: [],
     stickers: [],
     filter: 'none',
+    weather: 'none',
+    weatherIntensity: 0.5,
     selectedItemId: null,
     selectedItemType: null,
   }),
