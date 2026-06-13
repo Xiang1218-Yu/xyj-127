@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette } from 'lucide-react';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin } from 'lucide-react';
 import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
 import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
+import GeoQuizGame from '@/components/GeoQuizGame';
 import { LocationInfoCard } from '@/components/LocationInfoCard';
 import { LocationListSidebar } from '@/components/LocationListSidebar';
 import { TravelMap } from '@/components/TravelMap';
@@ -24,6 +25,7 @@ export default function Home() {
   const [showPuzzleGame, setShowPuzzleGame] = useState(false);
   const [puzzleScreenshot, setPuzzleScreenshot] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showGeoQuiz, setShowGeoQuiz] = useState(false);
   
   const streetViewerRef = useRef<StreetViewerRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,6 +135,9 @@ export default function Home() {
       if (e.code === 'KeyP' && !e.repeat && !showPuzzleGame && !isEditorOpen) {
         handleStartPuzzleGame();
       }
+      if (e.code === 'KeyG' && !e.repeat && !showGeoQuiz && !isEditorOpen) {
+        setShowGeoQuiz(true);
+      }
       if (e.code === 'KeyE' && !e.repeat) {
         handleToggleEditor();
       }
@@ -142,7 +147,7 @@ export default function Home() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, isEditorOpen, setEditorOpen, handleToggleEditor]);
+  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, showGeoQuiz, isEditorOpen, setEditorOpen, handleToggleEditor]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
@@ -160,7 +165,7 @@ export default function Home() {
           <StreetViewer
             ref={streetViewerRef}
             location={currentLocation}
-            interactive={!isLoading && !showPuzzleGame && !isEditorOpen}
+            interactive={!isLoading && !showPuzzleGame && !isEditorOpen && !showGeoQuiz}
             onSceneReady={handleSceneReady}
           />
         </div>
@@ -182,6 +187,7 @@ export default function Home() {
         onOpenList={() => setShowLocationList(true)}
         onOpenMap={() => setShowTravelMap(true)}
         onStartGame={handleStartPuzzleGame}
+        onOpenGeoQuiz={() => setShowGeoQuiz(true)}
         onOpenEditor={handleToggleEditor}
         isCapturing={isCapturing}
         isEditorOpen={isEditorOpen}
@@ -238,6 +244,13 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      {/* Geo Quiz Modal */}
+      <AnimatePresence>
+        {showGeoQuiz && (
+          <GeoQuizGame onClose={() => setShowGeoQuiz(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -285,12 +298,13 @@ interface HeaderProps {
   onOpenList: () => void;
   onOpenMap: () => void;
   onStartGame: () => void;
+  onOpenGeoQuiz: () => void;
   onOpenEditor: () => void;
   isCapturing: boolean;
   isEditorOpen: boolean;
 }
 
-function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, onOpenEditor, isCapturing, isEditorOpen }: HeaderProps) {
+function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, onOpenGeoQuiz, onOpenEditor, isCapturing, isEditorOpen }: HeaderProps) {
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
@@ -335,6 +349,15 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
               <Brain className="w-4 h-4" />
             )}
             <span className="text-sm font-medium hidden sm:inline">空间训练</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenGeoQuiz}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-200 hover:from-emerald-500/30 hover:to-teal-500/30 transition-all"
+          >
+            <MapPin className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">地理问答</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -464,6 +487,11 @@ function ControlHint() {
         <span className="flex items-center gap-1.5">
           <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500/30 to-pink-500/30 font-mono text-[10px] text-purple-200 border border-purple-400/30">P</kbd>
           空间训练
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-emerald-500/30 to-teal-500/30 font-mono text-[10px] text-emerald-200 border border-emerald-400/30">G</kbd>
+          地理问答
         </span>
         <span className="w-px h-4 bg-white/20" />
         <span className="flex items-center gap-1.5">
