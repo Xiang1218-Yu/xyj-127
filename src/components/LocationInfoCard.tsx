@@ -1,6 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Compass, Star, Share2, ChevronUp, ChevronDown } from 'lucide-react';
+import { MapPin, Compass, ChevronUp, ChevronDown } from 'lucide-react';
 import type { StreetViewLocation } from '@/data/locations';
+import { ClimateInfo } from './location-info/ClimateInfo';
+import { CultureInfo } from './location-info/CultureInfo';
+import { TravelTips } from './location-info/TravelTips';
+import { FavoriteButton } from './location-info/FavoriteButton';
+import { SharePanel } from './location-info/SharePanel';
 
 interface LocationInfoCardProps {
   location: StreetViewLocation;
@@ -127,12 +132,12 @@ function ExpandedContent({ location, onCollapse }: ExpandedContentProps) {
         </div>
       </div>
 
-      <div className="p-5">
-        <p className="text-white/80 text-sm leading-relaxed mb-4">
+      <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto scrollbar-thin">
+        <p className="text-white/80 text-sm leading-relaxed">
           {location.description}
         </p>
 
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-1.5">
           {location.tags.map(tag => (
             <span
               key={tag}
@@ -143,7 +148,7 @@ function ExpandedContent({ location, onCollapse }: ExpandedContentProps) {
           ))}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-white/10">
+        <div className="flex items-center justify-between pt-2 border-t border-white/10">
           <div className="flex items-center gap-3">
             <div className="text-white/50 text-xs">
               <div className="text-white/30 mb-0.5">纬度</div>
@@ -156,22 +161,14 @@ function ExpandedContent({ location, onCollapse }: ExpandedContentProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all"
-            >
-              <Star className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all"
-            >
-              <Share2 className="w-4 h-4" />
-            </motion.button>
+            <FavoriteButton locationId={location.id} />
+            <SharePanel location={location} />
           </div>
         </div>
+
+        <ClimateInfo climate={location.climate} />
+        <CultureInfo culture={location.culture} />
+        <TravelTips tips={location.tips} travelAdvice={location.travelAdvice} />
       </div>
 
       <button
