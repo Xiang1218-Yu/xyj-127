@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin, Volume2 } from 'lucide-react';
+import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin, Volume2, Columns } from 'lucide-react';
 import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
 import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
 import GeoQuizGame from '@/components/GeoQuizGame';
+import { DualPanoramaViewer } from '@/components/DualPanoramaViewer';
 import { LocationInfoCard } from '@/components/LocationInfoCard';
 import { LocationListSidebar } from '@/components/LocationListSidebar';
 import { TravelMap } from '@/components/TravelMap';
@@ -28,6 +29,7 @@ export default function Home() {
   const [puzzleScreenshot, setPuzzleScreenshot] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGeoQuiz, setShowGeoQuiz] = useState(false);
+  const [showDualPanorama, setShowDualPanorama] = useState(false);
   
   const streetViewerRef = useRef<StreetViewerRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -163,13 +165,20 @@ export default function Home() {
         initAudioContext();
         toggleMute();
       }
-      if (e.code === 'Escape' && !e.repeat && isEditorOpen) {
-        setEditorOpen(false);
+      if (e.code === 'KeyD' && !e.repeat && !isEditorOpen && !showDualPanorama) {
+        setShowDualPanorama(true);
+      }
+      if (e.code === 'Escape' && !e.repeat) {
+        if (isEditorOpen) {
+          setEditorOpen(false);
+        } else if (showDualPanorama) {
+          setShowDualPanorama(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, showGeoQuiz, isEditorOpen, setEditorOpen, handleToggleEditor, initAudioContext, toggleMute]);
+  }, [handleRandom, toggleInfo, handleStartPuzzleGame, showPuzzleGame, showGeoQuiz, isEditorOpen, setEditorOpen, handleToggleEditor, initAudioContext, toggleMute, showDualPanorama]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
@@ -211,6 +220,7 @@ export default function Home() {
         onStartGame={handleStartPuzzleGame}
         onOpenGeoQuiz={() => setShowGeoQuiz(true)}
         onOpenEditor={handleToggleEditor}
+        onOpenDualPanorama={() => setShowDualPanorama(true)}
         isCapturing={isCapturing}
         isEditorOpen={isEditorOpen}
       />
@@ -284,6 +294,13 @@ export default function Home() {
           <GeoQuizGame onClose={() => setShowGeoQuiz(false)} />
         )}
       </AnimatePresence>
+
+      {/* Dual Panorama Viewer */}
+      <AnimatePresence>
+        {showDualPanorama && (
+          <DualPanoramaViewer onClose={() => setShowDualPanorama(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -333,11 +350,12 @@ interface HeaderProps {
   onStartGame: () => void;
   onOpenGeoQuiz: () => void;
   onOpenEditor: () => void;
+  onOpenDualPanorama: () => void;
   isCapturing: boolean;
   isEditorOpen: boolean;
 }
 
-function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, onOpenGeoQuiz, onOpenEditor, isCapturing, isEditorOpen }: HeaderProps) {
+function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, onStartGame, onOpenGeoQuiz, onOpenEditor, onOpenDualPanorama, isCapturing, isEditorOpen }: HeaderProps) {
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
@@ -391,6 +409,15 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
           >
             <MapPin className="w-4 h-4" />
             <span className="text-sm font-medium hidden sm:inline">地理问答</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenDualPanorama}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 backdrop-blur-md border border-orange-400/30 text-orange-200 hover:from-orange-500/30 hover:to-amber-500/30 transition-all"
+          >
+            <Columns className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">双屏对比</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -535,6 +562,11 @@ function ControlHint() {
         <span className="flex items-center gap-1.5">
           <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-500/30 to-blue-500/30 font-mono text-[10px] text-cyan-200 border border-cyan-400/30">S</kbd>
           环境音效
+        </span>
+        <span className="w-px h-4 bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-500/30 to-amber-500/30 font-mono text-[10px] text-orange-200 border border-orange-400/30">D</kbd>
+          双屏对比
         </span>
       </div>
     </motion.div>
