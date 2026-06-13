@@ -61,6 +61,7 @@ function PanoramaView({
         controlledHeading={controlledHeading}
         controlledPitch={controlledPitch}
         onCameraChange={onCameraChange}
+        useStoreControls={false}
       />
       <ambientLight intensity={0.3} />
       {isNight && <Stars radius={100} depth={50} count={2000} factor={4} fade speed={1} />}

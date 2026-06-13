@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Palette, Type, Sticker, Download, RotateCcw, CloudRain } from 'lucide-react';
+import { X, Palette, Type, Sticker, Download, RotateCcw, CloudRain, Camera } from 'lucide-react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { FilterPanel } from '@/components/FilterPanel';
 import { WeatherPanel } from '@/components/WeatherPanel';
 import { WatermarkPanel } from '@/components/WatermarkPanel';
 import { StickerPanel } from '@/components/StickerPanel';
 import { ExportPanel } from '@/components/ExportPanel';
+import { CameraControlPanel } from '@/components/CameraControlPanel';
 import { cn } from '@/lib/utils';
 import type { StreetViewLocation } from '@/data/locations';
 import type { StreetViewerRef } from '@/components/StreetViewer';
@@ -17,6 +18,7 @@ interface EditorSidebarProps {
 }
 
 const TABS = [
+  { id: 'camera' as const, name: '相机', icon: Camera },
   { id: 'weather' as const, name: '天气', icon: CloudRain },
   { id: 'filter' as const, name: '滤镜', icon: Palette },
   { id: 'watermark' as const, name: '文字', icon: Type },
@@ -29,6 +31,8 @@ export function EditorSidebar({ getCanvas, getStreetViewer, location }: EditorSi
 
   const renderPanel = () => {
     switch (activeTab) {
+      case 'camera':
+        return <CameraControlPanel />;
       case 'weather':
         return <WeatherPanel />;
       case 'filter':

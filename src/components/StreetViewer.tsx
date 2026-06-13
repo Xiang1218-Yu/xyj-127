@@ -64,6 +64,7 @@ const StreetViewer = forwardRef<StreetViewerRef, StreetViewerProps>(function Str
   const isNight = location.id.includes('night') || location.id.includes('aurora') || location.id.includes('iceland');
   const weather = useEditorStore((s) => s.weather);
   const weatherIntensity = useEditorStore((s) => s.weatherIntensity);
+  const fov = useEditorStore((s) => s.fov);
 
   const handleSceneReady = useCallback((ctx: SceneContext) => {
     sceneContextRef.current = ctx;
@@ -100,7 +101,7 @@ const StreetViewer = forwardRef<StreetViewerRef, StreetViewerProps>(function Str
   return (
     <Canvas
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
-      camera={{ fov: 75, near: 0.1, far: 2000, position: [0, 0, 5] }}
+      camera={{ fov, near: 0.1, far: 2000, position: [0, 0, 5] }}
       style={{ background: '#111', width: '100%', height: '100%' }}
     >
       <SceneCapture onSceneReady={handleSceneReady} />

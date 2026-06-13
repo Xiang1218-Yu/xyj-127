@@ -41,6 +41,25 @@ export type WeatherType =
   | 'fog'
   | 'sand';
 
+export type ViewPresetType =
+  | 'front'
+  | 'back'
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'wide'
+  | 'telephoto'
+  | 'default';
+
+export interface ViewPreset {
+  id: ViewPresetType;
+  name: string;
+  heading: number;
+  pitch: number;
+  fov: number;
+}
+
 export interface Filter {
   id: FilterType;
   name: string;
@@ -95,9 +114,21 @@ export const COLOR_PRESETS = [
   '#00b894', '#e17055', '#6c5ce7', '#00cec9', '#fab1a0',
 ];
 
+export const VIEW_PRESETS: ViewPreset[] = [
+  { id: 'default', name: '默认', heading: 0, pitch: 0, fov: 75 },
+  { id: 'front', name: '正面', heading: 0, pitch: 0, fov: 75 },
+  { id: 'back', name: '背面', heading: 180, pitch: 0, fov: 75 },
+  { id: 'left', name: '左侧', heading: -90, pitch: 0, fov: 75 },
+  { id: 'right', name: '右侧', heading: 90, pitch: 0, fov: 75 },
+  { id: 'top', name: '俯视', heading: 0, pitch: 70, fov: 75 },
+  { id: 'bottom', name: '仰视', heading: 0, pitch: -70, fov: 75 },
+  { id: 'wide', name: '广角', heading: 0, pitch: 0, fov: 110 },
+  { id: 'telephoto', name: '长焦', heading: 0, pitch: 0, fov: 35 },
+];
+
 interface EditorState {
   isEditorOpen: boolean;
-  activeTab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'export';
+  activeTab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'camera' | 'export';
   
   filter: FilterType;
   weather: WeatherType;
@@ -105,15 +136,29 @@ interface EditorState {
   watermarks: Watermark[];
   stickers: Sticker[];
   
+  autoRotate: boolean;
+  autoRotateSpeed: number;
+  fov: number;
+  currentViewPreset: ViewPresetType | null;
+  forcedHeading: number | null;
+  forcedPitch: number | null;
+  
   selectedItemId: string | null;
   selectedItemType: 'watermark' | 'sticker' | null;
   
   setEditorOpen: (open: boolean) => void;
-  setActiveTab: (tab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'export') => void;
+  setActiveTab: (tab: 'watermark' | 'sticker' | 'filter' | 'weather' | 'camera' | 'export') => void;
   
   setFilter: (filter: FilterType) => void;
   setWeather: (weather: WeatherType) => void;
   setWeatherIntensity: (intensity: number) => void;
+  
+  setAutoRotate: (enabled: boolean) => void;
+  setAutoRotateSpeed: (speed: number) => void;
+  setFov: (fov: number) => void;
+  setCurrentViewPreset: (preset: ViewPresetType | null) => void;
+  setForcedCameraAngles: (heading: number, pitch: number) => void;
+  clearForcedCameraAngles: () => void;
   
   addWatermark: (text: string) => void;
   updateWatermark: (id: string, updates: Partial<Watermark>) => void;
@@ -143,6 +188,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   watermarks: [],
   stickers: [],
   
+  autoRotate: false,
+  autoRotateSpeed: 1,
+  fov: 75,
+  currentViewPreset: null,
+  forcedHeading: null,
+  forcedPitch: null,
+  
   selectedItemId: null,
   selectedItemType: null,
   
@@ -153,6 +205,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setFilter: (filter) => set({ filter }),
   setWeather: (weather) => set({ weather }),
   setWeatherIntensity: (weatherIntensity) => set({ weatherIntensity: Math.max(0, Math.min(1, weatherIntensity)) }),
+  
+  setAutoRotate: (autoRotate) => set({ autoRotate }),
+  setAutoRotateSpeed: (autoRotateSpeed) => set({ autoRotateSpeed: Math.max(0.1, Math.min(5, autoRotateSpeed)) }),
+  setFov: (fov) => set({ fov: Math.max(20, Math.min(120, fov)), currentViewPreset: null }),
+  setCurrentViewPreset: (preset) => {
+    if (preset) {
+      const presetConfig = VIEW_PRESETS.find(p => p.id === preset);
+      if (presetConfig) {
+        set({ 
+          currentViewPreset: preset, 
+          fov: presetConfig.fov,
+          forcedHeading: presetConfig.heading,
+          forcedPitch: presetConfig.pitch
+        });
+      }
+    } else {
+      set({ currentViewPreset: null });
+    }
+  },
+  setForcedCameraAngles: (heading, pitch) => set({ 
+    forcedHeading: heading, 
+    forcedPitch: pitch,
+    currentViewPreset: null
+  }),
+  clearForcedCameraAngles: () => set({ forcedHeading: null, forcedPitch: null }),
   
   addWatermark: (text) => set((state) => ({
     watermarks: [...state.watermarks, {
@@ -215,6 +292,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     filter: 'none',
     weather: 'none',
     weatherIntensity: 0.5,
+    autoRotate: false,
+    autoRotateSpeed: 1,
+    fov: 75,
+    currentViewPreset: null,
+    forcedHeading: null,
+    forcedPitch: null,
     selectedItemId: null,
     selectedItemType: null,
   }),

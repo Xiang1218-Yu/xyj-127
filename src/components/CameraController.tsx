@@ -2,6 +2,8 @@ import { useRef, useEffect, useCallback } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { useEditorStore } from '@/store/useEditorStore';
 
 export interface CameraControllerRef {
   getCameraAngles: () => { heading: number; pitch: number };
@@ -16,6 +18,7 @@ interface CameraControllerProps {
   controlledHeading?: number;
   controlledPitch?: number;
   onCameraChange?: (heading: number, pitch: number) => void;
+  useStoreControls?: boolean;
 }
 
 function getSphericalFromCamera(camera: THREE.Camera) {
@@ -44,12 +47,23 @@ export function CameraController({
   locationKey,
   controlledHeading,
   controlledPitch,
-  onCameraChange
+  onCameraChange,
+  useStoreControls = true
 }: CameraControllerProps) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
   const lastAnglesRef = useRef({ heading: initialHeading, pitch: initialPitch });
   const isControlled = controlledHeading !== undefined && controlledPitch !== undefined;
+  const lastFovRef = useRef<number | null>(null);
+
+  const autoRotate = useEditorStore((s) => s.autoRotate);
+  const autoRotateSpeed = useEditorStore((s) => s.autoRotateSpeed);
+  const storeFov = useEditorStore((s) => s.fov);
+  const forcedHeading = useEditorStore((s) => s.forcedHeading);
+  const forcedPitch = useEditorStore((s) => s.forcedPitch);
+  const clearForcedCameraAngles = useEditorStore((s) => s.clearForcedCameraAngles);
+
+  const fov = useStoreControls ? storeFov : 75;
 
   const updateCameraFromControlled = useCallback(() => {
     if (controlledHeading === undefined || controlledPitch === undefined) return;
@@ -74,6 +88,27 @@ export function CameraController({
     }
   }, [isControlled, controlledHeading, controlledPitch, updateCameraFromControlled]);
 
+  useEffect(() => {
+    if (useStoreControls && forcedHeading !== null && forcedPitch !== null) {
+      setCameraFromSpherical(camera, forcedHeading, forcedPitch);
+      if (controlsRef.current) {
+        controlsRef.current.update();
+      }
+      lastAnglesRef.current = { heading: forcedHeading, pitch: forcedPitch };
+      clearForcedCameraAngles();
+    }
+  }, [camera, useStoreControls, forcedHeading, forcedPitch, clearForcedCameraAngles]);
+
+  useEffect(() => {
+    if (fov !== lastFovRef.current) {
+      lastFovRef.current = fov;
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+      }
+    }
+  }, [camera, fov]);
+
   useFrame(() => {
     if (isControlled || !onCameraChange || !enabled) return;
 
@@ -94,7 +129,8 @@ export function CameraController({
       enablePan={false}
       enableRotate={enabled && !isControlled}
       rotateSpeed={-0.5}
-      autoRotate={false}
+      autoRotate={useStoreControls ? autoRotate : false}
+      autoRotateSpeed={useStoreControls ? autoRotateSpeed * 2 : 2}
       minPolarAngle={Math.PI / 6}
       maxPolarAngle={5 * Math.PI / 6}
       enableDamping
