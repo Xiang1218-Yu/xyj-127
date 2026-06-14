@@ -6,6 +6,7 @@ import { captureScene, createShareCard, downloadImage } from '@/utils/screenshot
 import type { StreetViewLocation } from '@/data/locations';
 import type { StreetViewerRef } from '@/components/StreetViewer';
 import { cn } from '@/lib/utils';
+import { buttonTaps, fadeInOut, fadeSlideY, modalContentSpring } from '@/animations';
 
 interface ExportPanelProps {
   getCanvas: () => HTMLCanvasElement | null;
@@ -152,8 +153,7 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
           {CARD_STYLES.map((style) => (
             <motion.button
               key={style.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              {...buttonTaps.subtle}
               onClick={() => setCardStyle(style.id)}
               className={cn(
                 'aspect-square rounded-xl overflow-hidden border-2 transition-all',
@@ -177,8 +177,9 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
 
       {errorMsg && (
         <motion.div
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
+          variants={fadeSlideY}
+          initial="initial"
+          animate="animate"
           className="px-3 py-2 bg-red-500/15 border border-red-500/30 rounded-xl text-red-300 text-xs"
         >
           {errorMsg}
@@ -187,8 +188,7 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
 
       <div className="space-y-3 pt-2">
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          {...buttonTaps.subtle}
           onClick={handleCaptureScreenshot}
           disabled={isExporting}
           className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
@@ -202,8 +202,7 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
         </motion.button>
 
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          {...buttonTaps.subtle}
           onClick={handleCreateShareCard}
           disabled={isExporting}
           className="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
@@ -220,16 +219,18 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
       <AnimatePresence>
         {previewUrl && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fadeInOut}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-8"
             onClick={handleClosePreview}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              variants={modalContentSpring}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               onClick={(e) => e.stopPropagation()}
               className="relative max-w-4xl w-full max-h-full overflow-auto"
             >
@@ -240,8 +241,7 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
                   </h3>
                   <div className="flex items-center gap-2">
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      {...buttonTaps.standard}
                       onClick={handleDownload}
                       className={cn(
                         'px-4 py-2 rounded-xl font-medium flex items-center gap-2 transition-all',
@@ -263,8 +263,7 @@ export function ExportPanel({ getCanvas, getStreetViewer, location }: ExportPane
                       )}
                     </motion.button>
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      {...buttonTaps.standard}
                       onClick={handleClosePreview}
                       className="p-2 rounded-xl bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
                     >

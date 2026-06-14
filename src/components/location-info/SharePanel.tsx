@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, X, Copy, Check } from 'lucide-react';
 import type { StreetViewLocation } from '@/data/locations';
+import { buttonTaps, fadeInOut, modalContentSpring } from '@/animations';
 
 interface SharePanelProps {
   location: StreetViewLocation;
@@ -80,8 +81,7 @@ export function SharePanel({ location }: SharePanelProps) {
   return (
     <>
       <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        {...buttonTaps.icon}
         onClick={() => setIsOpen(true)}
         className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all"
       >
@@ -91,17 +91,18 @@ export function SharePanel({ location }: SharePanelProps) {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fadeInOut}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={() => setIsOpen(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              variants={modalContentSpring}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="w-full max-w-lg max-h-[80vh] bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/15 overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
@@ -112,8 +113,7 @@ export function SharePanel({ location }: SharePanelProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    {...buttonTaps.standard}
                     onClick={handleCopy}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       copied

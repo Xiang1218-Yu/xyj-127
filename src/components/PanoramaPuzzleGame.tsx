@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, RotateCcw, Trophy, Clock, Grid3X3, Zap, Eye, EyeOff, CheckCircle2, Layers, SplitSquareHorizontal, Globe2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { breathScale, breathScaleCustom, buttonTaps, fadeInOut, fadeSlideY, modalContentWithOffset, staggerItem, transitions } from '@/animations';
 import type { StreetViewLocation } from '@/data/locations';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
@@ -278,8 +279,7 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
         onClick={() => handlePieceClick(piece.id)}
         onMouseDown={(e) => handleDragStart(e, piece.id)}
         onTouchStart={(e) => handleDragStart(e, piece.id)}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        {...buttonTaps.subtle}
       />
     );
   };
@@ -325,9 +325,10 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
 
       <motion.div
         className="relative w-full max-w-4xl mx-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl border border-white/10 shadow-2xl overflow-hidden"
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        variants={modalContentWithOffset}
+        initial="initial"
+        animate="animate"
+        exit="exit"
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
@@ -471,8 +472,9 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
               {showPreview && (
                 <motion.div
                   className="mb-4 px-4 py-3 bg-white/5 rounded-xl border border-white/10"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  variants={fadeSlideY}
+                  initial="initial"
+                  animate="animate"
                 >
                   <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
                     <div className="flex items-center gap-2 text-white/70 text-xs">
@@ -504,9 +506,10 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
                           width: boardSize,
                           height: boardSize,
                         }}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        variants={fadeInOut}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
                       >
                         <img
                           src={screenshot}
@@ -569,8 +572,9 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
                     <motion.div
                       className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10"
                       style={{ width: Math.min(200, boardSize * 0.5), aspectRatio: '1/1' }}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      variants={staggerItem('right', 20)}
+                      initial="initial"
+                      animate="animate"
                     >
                       <img
                         src={screenshot}
@@ -659,9 +663,10 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
             {gameState === 'won' && (
               <motion.div
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                variants={fadeInOut}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <motion.div
                   className="text-center p-8"
@@ -670,8 +675,8 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
                 >
                   <motion.div
                     className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
+                    variants={breathScaleCustom(1)}
+                    animate="animate"
                   >
                     <Trophy className="w-12 h-12 text-white" />
                   </motion.div>
@@ -713,9 +718,10 @@ export default function PanoramaPuzzleGame({ screenshot, location, onClose }: Pa
             {gameState === 'lost' && (
               <motion.div
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                variants={fadeInOut}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <motion.div
                   className="text-center p-8"

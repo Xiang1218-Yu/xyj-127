@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Music, Pause, Play, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { audioWave, audioWaveSmall, buttonTaps, collapseExpandSlow, pulseHeartbeat, rotateExpandStandard, slideInRightSpringFade, transitions } from '@/animations';
 import type { AmbientSoundConfig } from '@/data/soundConfigs';
 
 interface AmbientSoundControlProps {
@@ -30,9 +31,10 @@ export function AmbientSoundControl({
   return (
     <motion.div
       className="absolute right-6 top-24 z-30"
-      initial={{ x: 100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ delay: 0.5, type: 'spring', damping: 20 }}
+      variants={slideInRightSpringFade}
+      initial="initial"
+      animate="animate"
+      transition={{ ...transitions.springBouncy, delay: 0.5 }}
     >
       <div className="relative">
         <motion.div
@@ -56,8 +58,8 @@ export function AmbientSoundControl({
               {isPlaying && !isMuted && (
                 <motion.div
                   className="absolute -inset-1 rounded-full bg-cyan-400/20"
-                  animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  variants={pulseHeartbeat}
+                  animate="animate"
                 />
               )}
             </div>
@@ -83,13 +85,8 @@ export function AmbientSoundControl({
                     <motion.div
                       key={i}
                       className="w-1 bg-cyan-400 rounded-full"
-                      animate={{ height: [4, 12 + i * 3, 4] }}
-                      transition={{
-                        duration: 0.8,
-                        repeat: Infinity,
-                        delay: i * 0.15,
-                        ease: 'easeInOut'
-                      }}
+                      variants={audioWave(i * 0.15)}
+                      animate="animate"
                     />
                   ))}
                 </div>
@@ -97,8 +94,8 @@ export function AmbientSoundControl({
             </div>
 
             <motion.div
-              animate={{ rotate: expanded ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
+              animate={expanded ? 'animate' : 'initial'}
+              {...rotateExpandStandard}
             >
               <ChevronDown className="w-4 h-4 text-white/50" />
             </motion.div>
@@ -107,17 +104,16 @@ export function AmbientSoundControl({
           <AnimatePresence>
             {expanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                variants={collapseExpandSlow}
+                initial="initial"
+                animate="animate"
+                exit="exit"
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 space-y-4 border-t border-white/10 pt-4">
                   <div className="flex items-center gap-3">
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                      {...buttonTaps.icon}
                       onClick={(e) => {
                         e.stopPropagation();
                         onTogglePlay();
@@ -137,8 +133,7 @@ export function AmbientSoundControl({
                     </motion.button>
 
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                      {...buttonTaps.icon}
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleMute();
@@ -214,13 +209,8 @@ export function AmbientSoundControl({
                                 <motion.div
                                   key={i}
                                   className="w-0.5 bg-cyan-400/60 rounded-full"
-                                  animate={{ height: [3, 8 + i * 2, 3] }}
-                                  transition={{
-                                    duration: 0.8,
-                                    repeat: Infinity,
-                                    delay: i * 0.15,
-                                    ease: 'easeInOut'
-                                  }}
+                                  variants={audioWaveSmall(i * 0.15)}
+                                  animate="animate"
                                 />
                               ))}
                             </div>

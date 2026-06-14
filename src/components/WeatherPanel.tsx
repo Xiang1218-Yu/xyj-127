@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { buttonTaps, fadeSlideY, transitions } from '@/animations';
 import { useEditorStore, WEATHERS, type WeatherType } from '@/store/useEditorStore';
 
 const WEATHER_GRADIENTS: Record<WeatherType, string> = {
@@ -21,8 +22,7 @@ export function WeatherPanel() {
           {WEATHERS.map((w) => (
             <motion.button
               key={w.id}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              {...buttonTaps.standard}
               onClick={() => setWeather(w.id as WeatherType)}
               className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
                 weather === w.id
@@ -43,7 +43,7 @@ export function WeatherPanel() {
                 <motion.div
                   layoutId="weather-active"
                   className="absolute inset-0 border-2 border-cyan-400 rounded-xl pointer-events-none"
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  transition={transitions.springStandard}
                 />
               )}
             </motion.button>
@@ -53,8 +53,9 @@ export function WeatherPanel() {
 
       {weather !== 'none' && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          variants={fadeSlideY}
+          initial="initial"
+          animate="animate"
           className="space-y-3"
         >
           <div className="flex items-center justify-between">

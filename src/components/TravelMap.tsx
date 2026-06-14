@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, TrendingUp, Globe, Award } from 'lucide-react';
+import { buttonTaps, fadeInOut, modalContentSpringOffset, transitions } from '@/animations';
 import { streetViewLocations, type StreetViewLocation } from '@/data/locations';
 import { useTravelStore } from '@/store/useTravelStore';
 import { cn } from '@/lib/utils';
@@ -99,9 +100,10 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
       {open && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          variants={fadeInOut}
+          initial="initial"
+          animate="animate"
+          exit="exit"
         >
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -321,7 +323,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
                               intensity <= 4 ? '#f97316' : '#ef4444'
                           }}
                           whileHover={{ r: size / 2 + 3 }}
-                          transition={{ type: 'spring', stiffness: 300 }}
+                          transition={transitions.springStandard}
                         />
 
                         <circle
@@ -435,8 +437,7 @@ export function TravelMap({ open, onClose, onSelectLocation }: TravelMapProps) {
                         'relative rounded-xl p-3 border cursor-pointer transition-all',
                         'bg-white/5 border-white/10 hover:bg-white/10'
                       )}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      {...buttonTaps.subtle}
                       onClick={() => handleMarkerClick(item.location)}
                     >
                       <div className="flex items-start gap-2">

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
+import { collapseExpandStandard, rotateExpandFast } from '@/animations';
 
 interface InfoSectionProps {
   icon: ReactNode;
@@ -23,8 +24,8 @@ export function InfoSection({ icon, title, children, defaultOpen = false }: Info
           <span className="text-white/90 text-sm font-medium">{title}</span>
         </div>
         <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          animate={isOpen ? 'animate' : 'initial'}
+          {...rotateExpandFast}
         >
           <ChevronDown className="w-4 h-4 text-white/50" />
         </motion.div>
@@ -32,10 +33,10 @@ export function InfoSection({ icon, title, children, defaultOpen = false }: Info
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            variants={collapseExpandStandard}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
             <div className="px-3.5 pb-3">
               {children}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Trash2, Type, Palette, RotateCw } from 'lucide-react';
 import { useEditorStore, FONT_FAMILIES, COLOR_PRESETS, type Watermark } from '@/store/useEditorStore';
 import { cn } from '@/lib/utils';
+import { buttonTaps } from '@/animations';
 
 export function WatermarkPanel() {
   const { watermarks, addWatermark, updateWatermark, deleteWatermark, selectedItemId, selectItem } = useEditorStore();
@@ -28,8 +29,7 @@ export function WatermarkPanel() {
           className="flex-1 px-3 py-2 bg-white/10 border border-white/15 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:border-cyan-400/50 transition-colors"
         />
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          {...buttonTaps.standard}
           onClick={handleAdd}
           className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-white text-sm font-medium flex items-center gap-1.5"
         >
@@ -45,7 +45,7 @@ export function WatermarkPanel() {
           watermarks.map((wm) => (
             <motion.button
               key={wm.id}
-              whileHover={{ scale: 1.02 }}
+              {...buttonTaps.subtle}
               onClick={() => selectItem(wm.id, 'watermark')}
               className={cn(
                 'w-full px-3 py-2 rounded-xl flex items-center justify-between transition-all',
@@ -57,8 +57,7 @@ export function WatermarkPanel() {
               <span className="text-white/90 text-sm truncate">{wm.text}</span>
               <div className="flex items-center gap-1">
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  {...buttonTaps.icon}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteWatermark(wm.id);
@@ -137,8 +136,7 @@ export function WatermarkPanel() {
               {FONT_FAMILIES.map((font) => (
                 <motion.button
                   key={font.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  {...buttonTaps.subtle}
                   onClick={() => updateWatermark(selectedWatermark.id, { fontFamily: font.value })}
                   className={cn(
                     'px-3 py-2 rounded-lg text-sm transition-all',
@@ -163,8 +161,7 @@ export function WatermarkPanel() {
               {COLOR_PRESETS.map((color) => (
                 <motion.button
                   key={color}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  {...buttonTaps.icon}
                   onClick={() => updateWatermark(selectedWatermark.id, { color })}
                   className={cn(
                     'w-7 h-7 rounded-full border-2 transition-all',

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
+import { buttonTaps } from '@/animations';
 import { useFavoriteStore } from '@/store/useFavoriteStore';
 
 interface FavoriteButtonProps {
@@ -12,8 +13,7 @@ export function FavoriteButton({ locationId }: FavoriteButtonProps) {
 
   return (
     <motion.button
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
+      {...buttonTaps.icon}
       onClick={() => toggleFavorite(locationId)}
       className={`
         w-9 h-9 rounded-xl flex items-center justify-center transition-all

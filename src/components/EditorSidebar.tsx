@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Palette, Type, Sticker, Download, RotateCcw, CloudRain, Camera } from 'lucide-react';
+import { buttonTaps, fadeInOut, slideInRightSpring, transitions } from '@/animations';
 import { useEditorStore } from '@/store/useEditorStore';
 import { FilterPanel } from '@/components/FilterPanel';
 import { WeatherPanel } from '@/components/WeatherPanel';
@@ -53,26 +54,26 @@ export function EditorSidebar({ getCanvas, getStreetViewer, location }: EditorSi
       {isEditorOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fadeInOut}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="absolute inset-0 z-10"
             style={{ pointerEvents: 'none' }}
           />
           
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            variants={slideInRightSpring}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="absolute right-0 top-0 bottom-0 w-96 max-w-full bg-slate-900/95 backdrop-blur-xl border-l border-white/10 z-50 flex flex-col"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <h2 className="text-white font-bold text-lg">图片编辑</h2>
               <div className="flex items-center gap-2">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  {...buttonTaps.standard}
                   onClick={clearAll}
                   className="p-2 rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all flex items-center gap-1.5"
                   title="重置所有"
@@ -80,8 +81,7 @@ export function EditorSidebar({ getCanvas, getStreetViewer, location }: EditorSi
                   <RotateCcw className="w-4 h-4" />
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  {...buttonTaps.standard}
                   onClick={() => setEditorOpen(false)}
                   className="p-2 rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all"
                 >
@@ -96,8 +96,7 @@ export function EditorSidebar({ getCanvas, getStreetViewer, location }: EditorSi
                 return (
                   <motion.button
                     key={tab.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    {...buttonTaps.subtle}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
                       'flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all',

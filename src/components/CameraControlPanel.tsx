@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, RotateCw, Eye, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEditorStore, type ViewPresetType } from '@/store/useEditorStore';
 import { cn } from '@/lib/utils';
+import { buttonTaps, collapseExpandSlow } from '@/animations';
 
 export function CameraControlPanel() {
   const {
@@ -46,8 +47,7 @@ export function CameraControlPanel() {
               </span>
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              {...buttonTaps.standard}
               onClick={() => setAutoRotate(!autoRotate)}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all',
@@ -72,9 +72,10 @@ export function CameraControlPanel() {
 
           {autoRotate && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              variants={collapseExpandSlow}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="space-y-3"
             >
               <div className="flex items-center justify-between">
@@ -188,8 +189,7 @@ export function CameraControlPanel() {
               return (
                 <motion.button
                   key={preset.id}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  {...buttonTaps.subtle}
                   onClick={() => setCurrentViewPreset(preset.id)}
                   className={cn(
                     'flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all',
@@ -221,8 +221,7 @@ export function CameraControlPanel() {
             return (
               <motion.button
                 key={preset.id}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                {...buttonTaps.subtle}
                 onClick={() => setCurrentViewPreset(preset.id)}
                 className={cn(
                   'flex flex-col items-center gap-1.5 py-4 rounded-xl border transition-all',

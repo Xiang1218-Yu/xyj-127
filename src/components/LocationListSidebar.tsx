@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Globe2, X, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { buttonTaps, fadeInOut, slideInRightSpring, staggerItem } from '@/animations';
 import type { StreetViewLocation } from '@/data/locations';
 
 interface LocationListSidebarProps {
@@ -26,17 +27,18 @@ export function LocationListSidebar({
         <>
           <motion.div
             className="absolute inset-0 z-40 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fadeInOut}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             onClick={onClose}
           />
           <motion.div
             className="absolute right-0 top-0 bottom-0 z-50 w-full max-w-md bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-2xl border-l border-white/10 flex flex-col"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            variants={slideInRightSpring}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
             <SidebarHeader locationCount={locations.length} onClose={onClose} />
             <LocationList
@@ -66,8 +68,7 @@ function SidebarHeader({ locationCount, onClose }: SidebarHeaderProps) {
           全球目的地
         </h2>
         <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          {...buttonTaps.icon}
           onClick={onClose}
           className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 transition-all"
         >
@@ -113,12 +114,12 @@ interface LocationItemProps {
 function LocationItem({ location, isCurrent, index, onSelect }: LocationItemProps) {
   return (
     <motion.button
-      initial={{ x: 50, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      variants={staggerItem('right', 50)}
+      initial="initial"
+      animate="animate"
       transition={{ delay: index * 0.05 }}
+      {...buttonTaps.subtle}
       onClick={onSelect}
-      whileHover={{ scale: 1.02, x: -4 }}
-      whileTap={{ scale: 0.98 }}
       className={cn(
         'w-full text-left p-4 rounded-2xl border transition-all group',
         isCurrent

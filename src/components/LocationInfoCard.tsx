@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Compass, ChevronUp, ChevronDown } from 'lucide-react';
+import { collapseExpandSlow, fadeSlideY, slideInLeftSpring, transitions } from '@/animations';
 import type { StreetViewLocation } from '@/data/locations';
 import { ClimateInfo } from './location-info/ClimateInfo';
 import { CultureInfo } from './location-info/CultureInfo';
@@ -25,10 +26,11 @@ export function LocationInfoCard({
   return (
     <motion.div
       className="absolute left-6 bottom-6 z-30 max-w-sm"
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -100, opacity: 0 }}
-      transition={{ delay: 0.3, type: 'spring', damping: 20 }}
+      variants={slideInLeftSpring}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ ...transitions.springBouncy, delay: 0.3 }}
     >
       <div className="bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/15 overflow-hidden shadow-2xl shadow-black/50">
         <AnimatePresence mode="wait">
@@ -59,9 +61,10 @@ interface CollapsedBarProps {
 function CollapsedBar({ location, onExpand }: CollapsedBarProps) {
   return (
     <motion.button
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
+      variants={fadeSlideY}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       onClick={onExpand}
       className="flex items-center gap-3 px-5 py-3 w-full hover:bg-white/5 transition-all text-left"
     >
@@ -100,10 +103,10 @@ interface ExpandedContentProps {
 function ExpandedContent({ location, onCollapse }: ExpandedContentProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      variants={collapseExpandSlow}
+      initial="initial"
+      animate="animate"
+      exit="exit"
     >
       <div className="relative h-40 overflow-hidden">
         <img

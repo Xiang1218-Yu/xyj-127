@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { buttonTaps } from '@/animations';
 import { useEditorStore, FILTERS, type FilterType } from '@/store/useEditorStore';
 
 export function FilterPanel() {
@@ -12,8 +13,7 @@ export function FilterPanel() {
         {FILTERS.map((f) => (
           <motion.button
             key={f.id}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={() => setFilter(f.id as FilterType)}
             className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
               filter === f.id

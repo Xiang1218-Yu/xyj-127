@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle, Globe2, Sparkles, Loader2, Compass, List, Info, ChevronRight, Map, Brain, Palette, MapPin, Volume2, Columns } from 'lucide-react';
+import { breathScale, buttonTaps, fadeInOut, rotateInfinite, slideInBottomSpring, slideInTopSpring, transitions } from '@/animations';
 import StreetViewer, { type StreetViewerRef } from '@/components/StreetViewer';
 import PanoramaPuzzleGame from '@/components/PanoramaPuzzleGame';
 import GeoQuizGame from '@/components/GeoQuizGame';
@@ -190,7 +191,7 @@ export default function Home() {
           opacity: isTransitioning ? 0 : 1,
           scale: isTransitioning ? 1.05 : 1
         }}
-        transition={{ duration: 0.6, ease: 'easeInOut' }}
+        transition={transitions.easeSlow}
       >
         <div style={{ filter: getFilterCss() }} className="absolute inset-0">
           <StreetViewer
@@ -311,11 +312,11 @@ function LoadingOverlay({ cityName }: { cityName: string }) {
       className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={transitions.easeFast}
     >
       <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        variants={rotateInfinite}
+        animate="animate"
       >
         <Globe2 className="w-16 h-16 text-cyan-400" />
       </motion.div>
@@ -359,9 +360,10 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
   return (
     <motion.header
       className="absolute top-0 inset-x-0 z-30 px-6 py-5"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ delay: 0.2, type: 'spring', damping: 20 }}
+      variants={slideInTopSpring}
+      initial="initial"
+      animate="animate"
+      transition={{ ...transitions.springHeader, delay: 0.2 }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -371,8 +373,8 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             </div>
             <motion.div
               className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-400 border-2 border-black"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              variants={breathScale}
+              animate="animate"
             />
           </div>
           <div>
@@ -388,8 +390,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
 
         <div className="flex items-center gap-2">
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onStartGame}
             disabled={isCapturing}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-purple-400/30 text-purple-200 hover:from-purple-500/30 hover:to-pink-500/30 transition-all disabled:opacity-50"
@@ -402,8 +403,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">空间训练</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onOpenGeoQuiz}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-200 hover:from-emerald-500/30 hover:to-teal-500/30 transition-all"
           >
@@ -411,8 +411,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">地理问答</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onOpenDualPanorama}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 backdrop-blur-md border border-orange-400/30 text-orange-200 hover:from-orange-500/30 hover:to-amber-500/30 transition-all"
           >
@@ -420,8 +419,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">双屏对比</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onOpenMap}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white/90 hover:bg-white/20 transition-all"
           >
@@ -429,8 +427,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">足迹地图</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onOpenList}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white/90 hover:bg-white/20 transition-all"
           >
@@ -438,8 +435,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">地点列表</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onToggleInfo}
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-xl backdrop-blur-md border transition-all',
@@ -452,8 +448,7 @@ function Header({ visitedCount, showInfo, onToggleInfo, onOpenList, onOpenMap, o
             <span className="text-sm font-medium hidden sm:inline">信息</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            {...buttonTaps.standard}
             onClick={onOpenEditor}
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-xl backdrop-blur-md border transition-all',
@@ -480,21 +475,21 @@ function RandomButton({ onClick, isTransitioning }: RandomButtonProps) {
   return (
     <motion.div
       className="absolute right-6 bottom-6 z-30"
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.4, type: 'spring', damping: 20 }}
+      variants={slideInBottomSpring}
+      initial="initial"
+      animate="animate"
+      transition={{ ...transitions.springHeader, delay: 0.4 }}
     >
       <motion.button
         onClick={onClick}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        {...buttonTaps.standard}
         className="group relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
         <div className="relative px-7 py-4 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-2xl flex items-center gap-3 shadow-2xl shadow-blue-500/30">
           <motion.div
             animate={{ rotate: isTransitioning ? 360 : 0 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            transition={transitions.easeSlow}
           >
             <Shuffle className="w-6 h-6 text-white" />
           </motion.div>
@@ -517,8 +512,9 @@ function ControlHint() {
   return (
     <motion.div
       className="absolute left-1/2 -translate-x-1/2 bottom-6 z-20"
-      initial={{ y: 50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      variants={slideInBottomSpring}
+      initial="initial"
+      animate="animate"
       transition={{ delay: 0.6 }}
     >
       <div className="px-5 py-2.5 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white/60 text-xs flex items-center gap-4">
@@ -577,8 +573,9 @@ function CompassIndicator() {
   return (
     <motion.div
       className="absolute left-1/2 -translate-x-1/2 top-24 z-20"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      variants={slideInTopSpring}
+      initial="initial"
+      animate="animate"
       transition={{ delay: 0.5 }}
     >
       <div className="relative">

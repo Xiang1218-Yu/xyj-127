@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Trash2, RotateCw, Maximize2 } from 'lucide-react';
 import { useEditorStore, STICKER_EMOJIS, type Sticker } from '@/store/useEditorStore';
 import { cn } from '@/lib/utils';
+import { buttonTaps } from '@/animations';
 
 export function StickerPanel() {
   const { stickers, addSticker, updateSticker, deleteSticker, selectedItemId, selectItem } = useEditorStore();
@@ -16,8 +17,7 @@ export function StickerPanel() {
         {STICKER_EMOJIS.map((emoji, idx) => (
           <motion.button
             key={idx}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.9 }}
+            {...buttonTaps.emoji}
             onClick={() => addSticker(emoji)}
             className="aspect-square rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 flex items-center justify-center text-2xl transition-all"
           >
@@ -33,7 +33,7 @@ export function StickerPanel() {
           stickers.map((sticker) => (
             <motion.button
               key={sticker.id}
-              whileHover={{ scale: 1.02 }}
+              {...buttonTaps.subtle}
               onClick={() => selectItem(sticker.id, 'sticker')}
               className={cn(
                 'w-full px-3 py-2 rounded-xl flex items-center justify-between transition-all',
@@ -50,8 +50,7 @@ export function StickerPanel() {
               </div>
               <div className="flex items-center gap-1">
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  {...buttonTaps.icon}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteSticker(sticker.id);

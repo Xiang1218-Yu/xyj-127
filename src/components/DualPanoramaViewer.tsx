@@ -9,6 +9,7 @@ import { WeatherParticles } from '@/components/WeatherParticles';
 import { streetViewLocations, type StreetViewLocation, getRandomLocation } from '@/data/locations';
 import { useEditorStore } from '@/store/useEditorStore';
 import { cn } from '@/lib/utils';
+import { buttonTaps, collapseExpandFast, fadeInOut } from '@/animations';
 
 type ViewMode = 'sync' | 'independent';
 
@@ -115,10 +116,10 @@ function LocationSelector({ location, onChange, side }: LocationSelectorProps) {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -10, height: 0 }}
-            transition={{ duration: 0.2 }}
+            variants={collapseExpandFast}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="absolute top-full left-0 mt-2 w-72 max-h-80 overflow-y-auto rounded-xl bg-black/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50"
           >
             <div className="p-2">
@@ -406,8 +407,7 @@ export function DualPanoramaViewer({ onClose }: DualPanoramaViewerProps) {
               {rightLocation.city}, {rightLocation.country}
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              {...buttonTaps.standard}
               onClick={handleRandomRight}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-400/30 backdrop-blur-sm text-purple-200 text-xs hover:bg-purple-500/30 transition-all"
             >
